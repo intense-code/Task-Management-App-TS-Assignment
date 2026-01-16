@@ -1,0 +1,4 @@
+.taskindex{
+    display:flex;
+    flex-direction:column
+}
