@@ -1,18 +1,22 @@
-import { useState } from "react"
-import type Task from "./model/Tasks.model"
 import Tasks from './components/tasks/Tasks'
 import './App.css'
+import { TaskProvider, useTaskContext } from "./context/TaskContext"
 
-function App() {
-  const [task,setTask] = useState<Task>({name: "",
-    details:"",finished:false,remove:false,enteredDate:new Date(),
-    notificationDate: new Date(), deadline: new Date()
-})
+const AppContent = () => {
+  const { state } = useTaskContext()
 
   return (
     <>
-     <Tasks task={task} />
+     <Tasks task={state.task} />
     </>
+  )
+}
+
+function App() {
+  return (
+    <TaskProvider>
+      <AppContent />
+    </TaskProvider>
   )
 }
 

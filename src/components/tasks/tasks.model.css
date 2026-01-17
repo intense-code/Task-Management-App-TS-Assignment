@@ -1,4 +1,51 @@
+
+.taskcard{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    padding:14px;
+    background-color:#f4f5f7;
+    border:1px solid #43aedb;
+    border-radius:12px;
+    box-shadow:0 6px 14px rgba(0,0,0,0.08);
+}
+.taskcard h3{
+    margin:0;
+    padding:0;
+}
+.taskcard form{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    width:100%;
+    max-width:520px;
+    padding:8px 14px 12px;
+    background-color:#ffffff;
+    border:1px solid #e0e0e0;
+    border-radius:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,0.06);
+}
 .taskindex{
     display:flex;
-    flex-direction:column
+    flex-direction:column;
+    justify-content: space-evenly;
+    background-color:lightskyblue;
+    color:black;
+}
+label{
+    font-weight:bold;
+}
+.taskrow{
+    display:flex;
+    flex-direction:row;
+    align-content: center;
+}
+#details{
+    width:90%;
+    height:90%;
+}
+#submit{
+    background-color: black;
+    color:white;
 }
