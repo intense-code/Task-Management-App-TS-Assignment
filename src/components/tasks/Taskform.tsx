@@ -7,14 +7,16 @@ const TaskForm: React.FC = () => {
 
   const addTask = (e: React.FormEvent) => {
     e.preventDefault()
-    dispatch({ type: "update", payload: { enteredDate: new Date() } })
+    const newTask = { ...task, enteredDate: new Date() }
+    dispatch({ type: "add_task", payload: newTask })
+    dispatch({ type: "reset_current" })
   }
 
   return (
     <div className="taskcard">
       <form onSubmit={addTask}>
         <div className="taskrow">
-          <h3>Task Acomplisher</h3>
+          <h3>Task Accomplisher</h3>
         </div>
         <div className="taskrow">
         <div className="taskindex">
@@ -25,7 +27,7 @@ const TaskForm: React.FC = () => {
           placeholder="name"
           value={task.name}
           onChange={(e) =>
-            dispatch({ type: "update", payload: { name: e.target.value } })
+            dispatch({ type: "update_current", payload: { name: e.target.value } })
           }
         />
         <label htmlFor="finished">Finished</label>
@@ -34,7 +36,7 @@ const TaskForm: React.FC = () => {
           id="finished"
           checked={task.finished}
           onChange={(e) =>
-            dispatch({ type: "update", payload: { finished: e.target.checked } })
+            dispatch({ type: "update_current", payload: { finished: e.target.checked } })
           }
         />
         <button id="submit" type="submit">Add Task</button>
@@ -46,7 +48,7 @@ const TaskForm: React.FC = () => {
           placeholder="details"
           value={task.details}
           onChange={(e) =>
-            dispatch({ type: "update", payload: { details: e.target.value } })
+            dispatch({ type: "update_current", payload: { details: e.target.value } })
           }
         />
         </div>
@@ -59,7 +61,7 @@ const TaskForm: React.FC = () => {
           value={task.notificationDate ? toLocalInput(task.notificationDate) : ""}
           onChange={(e) =>
             dispatch({
-              type: "update",
+              type: "update_current",
               payload: {
                 notificationDate: e.target.value ? new Date(e.target.value) : new Date(),
               },
@@ -73,7 +75,7 @@ const TaskForm: React.FC = () => {
           value={task.deadline ? toLocalInput(task.deadline) : ""}
           onChange={(e) =>
             dispatch({
-              type: "update",
+              type: "update_current",
               payload: {
                 deadline: e.target.value ? new Date(e.target.value) : new Date(),
               },
