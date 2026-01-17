@@ -3,9 +3,9 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    width:100%;
+    width:580px;
     padding:14px;
-    background-color:#f4f5f7;
+    background-color:#bbc0b6;
     border:1px solid #43aedb;
     border-radius:12px;
     box-shadow:0 6px 14px rgba(0,0,0,0.08);
@@ -21,8 +21,8 @@
     width:100%;
     max-width:520px;
     padding:8px 14px 12px;
-    background-color:#ffffff;
-    border:1px solid #e0e0e0;
+    background-color:#acc8d4;
+    border:1px solid #43aedb;
     border-radius:10px;
     box-shadow:0 6px 16px rgba(0,0,0,0.06);
 }
@@ -41,11 +41,36 @@ label{
     flex-direction:row;
     align-content: center;
 }
+.tasklist{
+    padding:16px;
+    background-color:#9ab7ec;
+    border:1px solid #43aedb;
+    border-radius:12px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.08);
+}
+.tasklist-item{
+    padding:12px;
+    margin-bottom:12px;
+    width:100%;
+    box-sizing:border-box;
+    background-color:#e6eef8;
+    border:1px solid #43aedb;
+    border-radius:10px;
+}
+.tasklist-item:nth-child(odd){
+    background-color:#bbc0b6;
+}
+.tasklist-item:nth-child(even){
+    background-color:#468fca;
+}
+.tasklist-item:last-child{
+    margin-bottom:0;
+}
 #details{
     width:90%;
     height:90%;
 }
-#submit{
+button{
     background-color: black;
     color:white;
 }

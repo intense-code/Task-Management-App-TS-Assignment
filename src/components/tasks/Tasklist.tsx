@@ -13,7 +13,7 @@ const Tasklist: React.FC = () => {
   }
 
   return (
-    <div className="taskindex">
+    <div className="taskindex tasklist">
       {state.tasks.map((task, index) => {
         // Notification Time
             const notifyDate: dateStrings = {
@@ -25,8 +25,8 @@ const Tasklist: React.FC = () => {
   time: task.deadline.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
 } 
         return (
-          <div  key={`${task.name}-${index}`}>
-            <div >
+          <div key={`${task.name}-${index}`} className="tasklist-item">
+            <div>
               <strong>{task.name}</strong>
               <div>{task.details}</div>
               <div>
