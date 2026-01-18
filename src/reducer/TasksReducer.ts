@@ -8,9 +8,11 @@ export type TaskState = {
 export type TaskAction =
   | { type: "update_current"; payload: Partial<Task> }
   | { type: "set_current"; payload: Task }
+  | { type: "set_state"; payload: TaskState }
   | { type: "add_task"; payload: Task }
   | { type: "reset_current" }
   | { type: "remove_task"; payload: number }
+  | { type: "update_task"; payload: { id: number; changes: Partial<Task> } }
 
 export const initialTask: Task = {
   name: "",
@@ -35,6 +37,8 @@ export const taskReducer = (state: TaskState, action: TaskAction): TaskState => 
     // Replaces the entire task with the payload so you must provide a full new task
     case "set_current":
       return { ...state, task: action.payload }
+    case "set_state":
+      return action.payload
     // Add a full new task
       case "add_task":
       return { ...state, tasks: [...state.tasks, action.payload] }
@@ -46,6 +50,15 @@ export const taskReducer = (state: TaskState, action: TaskAction): TaskState => 
         ...state,
         tasks: state.tasks.filter(
           (tsk) => tsk.enteredDate.getTime() !== action.payload
+        ),
+      }
+    case "update_task":
+      return {
+        ...state,
+        tasks: state.tasks.map((tsk) =>
+          tsk.enteredDate.getTime() === action.payload.id
+            ? { ...tsk, ...action.payload.changes }
+            : tsk
         ),
       }
     default:
