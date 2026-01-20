@@ -1,18 +1,29 @@
-import { app, BrowserWindow, Notification, Tray, Menu } from "electron";
+import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 
 const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-const __dirname = '/var/local/www/w3/webdesign/codingTemple/React_Typescript/TaskManagementAppAssignment/taskAccomplisher'
-const schedulesPath = path.join(__dirname, "tasks.json");
+const __dirname = path.dirname(__filename);
+const appRoot = path.join(__dirname, "..");
+const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
 let win = null;
 let tray = null;
 let lastGoodConfig = { items: [], tasks: [] };
+let trayAvailable = false;
+
+function toggleWindow() {
+  const w = ensureWindow();
+  if (w.isVisible()) {
+    w.hide();
+  } else {
+    w.show();
+    w.focus();
+  }
+}
 
 // Keep track of timers so we can rebuild schedules when JSON changes
 const timers = new Map();
@@ -47,7 +58,7 @@ function ensureWindow() {
   win = new BrowserWindow({
     width: 1100,
     height: 750,
-    show: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true
@@ -55,6 +66,10 @@ function ensureWindow() {
   });
 
   win.loadURL(getAppUrl());
+  win.once("ready-to-show", () => {
+    // Show the window on launch so it's accessible even if the tray isn't visible.
+    win.show();
+  });
 
   // Tray-style behavior: close hides instead of quitting
   win.on("close", (e) => {
@@ -201,6 +216,7 @@ function createTray() {
   }
 
   tray = new Tray(trayIconPath); // put a small png here
+  trayAvailable = true;
 
   const menu = Menu.buildFromTemplate([
     { label: "Open", click: () => openOrFocus("/") },
@@ -228,6 +244,15 @@ app.whenReady().then(() => {
   createTray();
   buildSchedules();
 
+  // Fallback: global shortcut to toggle window when tray is unavailable.
+  globalShortcut.register("CommandOrControl+Shift+Y", () => {
+    toggleWindow();
+  });
+
+  if (!trayAvailable) {
+    win.show();
+  }
+
   // Auto-reload schedules when JSON changes
   let reloadTimer = null;
   const scheduleReload = () => {
@@ -248,3 +273,7 @@ app.whenReady().then(() => {
 
 // Keep running as tray app
 app.on("window-all-closed", () => {});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
