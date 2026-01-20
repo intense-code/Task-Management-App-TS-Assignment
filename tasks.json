@@ -4,19 +4,28 @@
     "details": "",
     "finished": false,
     "remove": false,
-    "enteredDate": "2026-01-20T08:55:18.498Z",
-    "notificationDate": "2026-01-20T08:55:18.498Z",
-    "deadline": "2026-01-20T08:55:18.498Z"
+    "enteredDate": "2026-01-20T09:54:29.180Z",
+    "notificationDate": "2026-01-20T09:54:29.180Z",
+    "deadline": "2026-01-20T09:54:29.180Z"
   },
   "tasks": [
     {
-      "name": "dd",
-      "details": "s",
+      "name": "sss",
+      "details": "ssddddsscc",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-20T08:58:02.206Z",
-      "notificationDate": "2026-01-20T08:59:00.000Z",
-      "deadline": "2026-01-20T08:59:00.000Z"
+      "enteredDate": "2026-01-20T09:55:05.059Z",
+      "notificationDate": "2026-01-20T09:56:00.000Z",
+      "deadline": "2026-01-20T08:55:18.498Z"
+    },
+    {
+      "name": "fuckup",
+      "details": "bigtime",
+      "finished": false,
+      "remove": false,
+      "enteredDate": "2026-01-20T09:55:35.566Z",
+      "notificationDate": "2026-01-20T09:57:00.000Z",
+      "deadline": "2026-01-20T09:57:00.000Z"
     }
   ]
 }

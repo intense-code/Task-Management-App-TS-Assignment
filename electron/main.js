@@ -8,16 +8,26 @@ const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 const __dirname = '/var/local/www/w3/webdesign/codingTemple/React_Typescript/TaskManagementAppAssignment/taskAccomplisher'
 const schedulesPath = path.join(__dirname, "tasks.json");
+const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
 let win = null;
 let tray = null;
+let lastGoodConfig = { items: [], tasks: [] };
 
 // Keep track of timers so we can rebuild schedules when JSON changes
 const timers = new Map();
 
 function readSchedules() {
-  const raw = fs.readFileSync(schedulesPath, "utf-8");
-  return JSON.parse(raw);
+  try {
+    const raw = fs.readFileSync(schedulesPath, "utf-8");
+    const parsed = JSON.parse(raw);
+    lastGoodConfig = parsed;
+    return parsed;
+  } catch (err) {
+    const message = err?.message || String(err);
+    console.warn(`Failed to read schedules: ${message}`);
+    return lastGoodConfig;
+  }
 }
 
 function getAppUrl() {
@@ -154,20 +164,30 @@ function buildSchedules() {
     const when = new Date(task.notificationDate);
     if (Number.isNaN(when.getTime())) continue;
 
-    const delay = when.getTime() - Date.now();
-    if (delay <= 0) continue;
-
     const id = task.id || `task-${index}-${when.getTime()}`;
 
-    const t = setTimeout(() => {
-      notify({
-        title: task.name || "Task Reminder",
-        message: task.details || "",
-        route: "/"
-      });
-    }, delay);
+    const scheduleAt = () => {
+      const delay = when.getTime() - Date.now();
+      if (delay <= 0) return;
 
-    timers.set(id, t);
+      if (delay > MAX_DELAY_MS) {
+        const t = setTimeout(scheduleAt, MAX_DELAY_MS);
+        timers.set(id, t);
+        return;
+      }
+
+      const t = setTimeout(() => {
+        notify({
+          title: task.name || "Task Reminder",
+          message: task.details || "",
+          route: "/"
+        });
+      }, delay);
+
+      timers.set(id, t);
+    };
+
+    scheduleAt();
   }
 }
 
@@ -209,14 +229,21 @@ app.whenReady().then(() => {
   buildSchedules();
 
   // Auto-reload schedules when JSON changes
-  chokidar.watch(schedulesPath, { ignoreInitial: true }).on("change", () => {
-    try {
-      buildSchedules();
-      notify({ title: "Schedules updated", message: "Reloaded tasks.json", route: "/" });
-    } catch (e) {
-      notify({ title: "Schedule error", message: String(e?.message || e), route: "/" });
-    }
-  });
+  let reloadTimer = null;
+  const scheduleReload = () => {
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+      try {
+        buildSchedules();
+        // Comment out this line if you don't want a toast on every save.
+        // notify({ title: "Schedules updated", message: "Reloaded tasks.json", route: "/" });
+      } catch (e) {
+        notify({ title: "Schedule error", message: String(e?.message || e), route: "/" });
+      }
+    }, 300);
+  };
+
+  chokidar.watch(schedulesPath, { ignoreInitial: true }).on("change", scheduleReload);
 });
 
 // Keep running as tray app
