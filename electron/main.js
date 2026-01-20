@@ -23,11 +23,12 @@ function readSchedules() {
 function getAppUrl() {
   const cfg = readSchedules();
 
-  if (!app.isPackaged) return cfg.appUrlDev;
+  if (!app.isPackaged) return cfg.appUrlDev || "http://localhost:5173/";
 
   // When packaged, you’ll load your built React files. For now keep placeholder behavior.
   // You’ll swap this during packaging (see notes below).
-  return cfg.appUrlProd.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
+  const prod = cfg.appUrlProd || "file://__APP__/dist/index.html";
+  return prod.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
 }
 
 function ensureWindow() {
@@ -36,7 +37,7 @@ function ensureWindow() {
   win = new BrowserWindow({
     width: 1100,
     height: 750,
-    show: false,
+    show: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true
@@ -101,6 +102,7 @@ function buildSchedules() {
 
   const cfg = readSchedules();
   const items = Array.isArray(cfg.items) ? cfg.items : [];
+  const tasks = Array.isArray(cfg.tasks) ? cfg.tasks : [];
 
   for (const item of items) {
     if (!item?.id) continue;
@@ -144,12 +146,41 @@ function buildSchedules() {
       scheduleNext();
     }
   }
+
+  for (const [index, task] of tasks.entries()) {
+    if (!task || task.finished || task.remove) continue;
+    if (typeof task.notificationDate !== "string") continue;
+
+    const when = new Date(task.notificationDate);
+    if (Number.isNaN(when.getTime())) continue;
+
+    const delay = when.getTime() - Date.now();
+    if (delay <= 0) continue;
+
+    const id = task.id || `task-${index}-${when.getTime()}`;
+
+    const t = setTimeout(() => {
+      notify({
+        title: task.name || "Task Reminder",
+        message: task.details || "",
+        route: "/"
+      });
+    }, delay);
+
+    timers.set(id, t);
+  }
 }
 
 function createTray() {
   // If you don’t set an icon, tray may be invisible on some setups.
   // Add one later: new Tray(path.join(__dirname, "tray.png"))
-  tray = new Tray(path.join(__dirname, "tray.png")); // put a small png here
+  const trayIconPath = path.join(__dirname, "tray.png");
+  if (!fs.existsSync(trayIconPath)) {
+    console.warn(`Tray icon not found at ${trayIconPath}; skipping tray.`);
+    return;
+  }
+
+  tray = new Tray(trayIconPath); // put a small png here
 
   const menu = Menu.buildFromTemplate([
     { label: "Open", click: () => openOrFocus("/") },
