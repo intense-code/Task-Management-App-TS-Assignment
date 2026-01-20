@@ -1,8 +1,9 @@
 {
-  "name": "taskacomplisher",
+  "name": "taskaccomplisher",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "vite": "vite",
     "build": "tsc -b && vite build",
@@ -10,10 +11,13 @@
     "preview": "vite preview",
     "dev:web": "vite",
     "dev:electron": "electron ./electron/main.js",
-    "dev": "npm run dev:web & npm run dev:electron"
+    "dev": "npm run dev:web & npm run dev:electron",
+    "dist": "npm run build && electron-builder",
+    "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
+    "chokidar": "^5.0.0",
     "react": "^19.2.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.0",
@@ -25,8 +29,8 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "chokidar": "^5.0.0",
     "electron": "^40.0.0",
+    "electron-builder": "^26.4.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -34,5 +38,29 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
+  },
+  "build": {
+    "appId": "com.codextemple.taskaccomplisher",
+    "productName": "TaskAccomplisher",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "tasks.json",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "electron/resources",
+      "output": "release"
+    },
+    "mac": {
+      "icon": "electron/resources/icon.icns"
+    },
+    "win": {
+      "icon": "electron/resources/icon.ico"
+    },
+    "linux": {
+      "icon": "electron/resources/icon.png",
+      "category": "Utility"
+    }
   }
 }

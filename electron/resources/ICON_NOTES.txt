@@ -1,0 +1,9 @@
+Add platform app icons here for electron-builder:
+- macOS: icon.icns (1024x1024 recommended)
+- Windows: icon.ico (256x256 recommended)
+- Linux: icon.png (512x512 recommended)
+
+Tray icons used at runtime should live in TaskManagementAppAssignment/taskAccomplisher/electron/:
+- trayTemplate.png (macOS monochrome template)
+- tray.ico (Windows)
+- tray.png (Linux fallback)

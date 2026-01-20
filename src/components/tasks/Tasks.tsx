@@ -12,7 +12,7 @@ const Tasks: React.FC<tasksProp> = ({task}) =>{
         <>
         <Taskform />
         <Tasklist />
-        
+        {console.log(task.name)}
         </>
     )
 }

@@ -1,19 +1,81 @@
-import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
+import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut, ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFile } from "node:child_process";
 import chokidar from "chokidar";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const appRoot = path.join(__dirname, "..");
-const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
 let win = null;
 let tray = null;
 let lastGoodConfig = { items: [], tasks: [] };
 let trayAvailable = false;
+let schedulesPath = null;
+let logFilePath = null;
+let logFallbackPath = "/tmp/task-accomplisher.log";
+
+app.setName("TaskAccomplisher");
+
+function logMessage(message) {
+  try {
+    if (!logFilePath && app?.getPath) {
+      logFilePath = path.join(app.getPath("userData"), "scheduler.log");
+    }
+    const line = `[${new Date().toISOString()}] ${message}\n`;
+    if (logFilePath) fs.appendFileSync(logFilePath, line, "utf-8");
+    if (logFallbackPath) fs.appendFileSync(logFallbackPath, line, "utf-8");
+    console.log(message);
+  } catch (err) {
+    console.warn("Failed to write log", err);
+  }
+}
+
+function getAppRoot() {
+  return app.isPackaged ? app.getAppPath() : path.join(__dirname, "..");
+}
+
+function getSchedulesPath() {
+  if (schedulesPath) return schedulesPath;
+
+  if (app.isPackaged) {
+    const userDataPath = app.getPath("userData");
+    schedulesPath = path.join(userDataPath, "tasks.json");
+
+    if (!fs.existsSync(schedulesPath)) {
+      const defaultPath = path.join(getAppRoot(), "tasks.json");
+      let seed = { items: [], tasks: [] };
+
+      if (fs.existsSync(defaultPath)) {
+        try {
+          seed = JSON.parse(fs.readFileSync(defaultPath, "utf-8"));
+        } catch {}
+      }
+
+      fs.writeFileSync(schedulesPath, JSON.stringify(seed, null, 2), "utf-8");
+    }
+  } else {
+    schedulesPath = path.join(getAppRoot(), "tasks.json");
+  }
+
+  return schedulesPath;
+}
+
+function writeSchedules(nextConfig) {
+  if (!nextConfig || typeof nextConfig !== "object") {
+    throw new Error("Invalid schedules payload");
+  }
+
+  const targetPath = getSchedulesPath();
+  const next = `${JSON.stringify(nextConfig, null, 2)}\n`;
+  const tmpPath = `${targetPath}.tmp`;
+
+  fs.writeFileSync(tmpPath, next, "utf-8");
+  fs.renameSync(tmpPath, targetPath);
+  lastGoodConfig = nextConfig;
+}
 
 function toggleWindow() {
   const w = ensureWindow();
@@ -30,9 +92,10 @@ const timers = new Map();
 
 function readSchedules() {
   try {
-    const raw = fs.readFileSync(schedulesPath, "utf-8");
+    const raw = fs.readFileSync(getSchedulesPath(), "utf-8");
     const parsed = JSON.parse(raw);
     lastGoodConfig = parsed;
+    logMessage(`Loaded schedules: items=${Array.isArray(parsed.items) ? parsed.items.length : 0}, tasks=${Array.isArray(parsed.tasks) ? parsed.tasks.length : 0}`);
     return parsed;
   } catch (err) {
     const message = err?.message || String(err);
@@ -46,10 +109,8 @@ function getAppUrl() {
 
   if (!app.isPackaged) return cfg.appUrlDev || "http://localhost:5173/";
 
-  // When packaged, you’ll load your built React files. For now keep placeholder behavior.
-  // You’ll swap this during packaging (see notes below).
-  const prod = cfg.appUrlProd || "file://__APP__/dist/index.html";
-  return prod.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
+  const prodPath = path.join(getAppRoot(), "dist", "index.html");
+  return pathToFileURL(prodPath).toString();
 }
 
 function ensureWindow() {
@@ -60,7 +121,7 @@ function ensureWindow() {
     height: 750,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true
     }
   });
@@ -107,11 +168,27 @@ function openOrFocus(route = "/") {
 }
 
 function notify({ title, message, route }) {
+  logMessage(`Notify: ${title || "Reminder"} | ${message || ""}`);
+
+  if (!Notification.isSupported()) {
+    if (process.platform === "linux") {
+      execFile("notify-send", [title || "Reminder", message || ""], () => {});
+    }
+    return;
+  }
+
   const n = new Notification({ title, body: message });
 
   n.on("click", () => openOrFocus(route || "/"));
 
-  n.show();
+  try {
+    n.show();
+  } catch (err) {
+    logMessage(`Notification.show failed: ${err?.message || String(err)}`);
+    if (process.platform === "linux") {
+      execFile("notify-send", [title || "Reminder", message || ""], () => {});
+    }
+  }
 }
 
 function clearAllTimers() {
@@ -128,6 +205,8 @@ function buildSchedules() {
   const cfg = readSchedules();
   const items = Array.isArray(cfg.items) ? cfg.items : [];
   const tasks = Array.isArray(cfg.tasks) ? cfg.tasks : [];
+
+  logMessage("Building schedules");
 
   for (const item of items) {
     if (!item?.id) continue;
@@ -180,6 +259,8 @@ function buildSchedules() {
     if (Number.isNaN(when.getTime())) continue;
 
     const id = task.id || `task-${index}-${when.getTime()}`;
+    const initialDelay = when.getTime() - Date.now();
+    logMessage(`Task schedule: id=${id} delayMs=${initialDelay}`);
 
     const scheduleAt = () => {
       const delay = when.getTime() - Date.now();
@@ -209,9 +290,19 @@ function buildSchedules() {
 function createTray() {
   // If you don’t set an icon, tray may be invisible on some setups.
   // Add one later: new Tray(path.join(__dirname, "tray.png"))
-  const trayIconPath = path.join(__dirname, "tray.png");
-  if (!fs.existsSync(trayIconPath)) {
-    console.warn(`Tray icon not found at ${trayIconPath}; skipping tray.`);
+  const platform = process.platform;
+  const iconCandidates = [
+    platform === "darwin" ? "trayTemplate.png" : null,
+    platform === "win32" ? "tray.ico" : null,
+    "tray.png"
+  ].filter(Boolean);
+
+  const trayIconPath = iconCandidates
+    .map((name) => path.join(__dirname, name))
+    .find((p) => fs.existsSync(p));
+
+  if (!trayIconPath) {
+    console.warn("Tray icon not found; skipping tray.");
     return;
   }
 
@@ -240,6 +331,20 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  logMessage(`User data path: ${app.getPath("userData")}`);
+  logMessage(`Notification supported: ${Notification.isSupported()}`);
+  logMessage(`notify-send available: ${fs.existsSync("/usr/bin/notify-send") || fs.existsSync("/bin/notify-send")}`);
+
+  ipcMain.handle("tasks:read", async () => readSchedules());
+  ipcMain.handle("tasks:write", async (_event, payload) => {
+    writeSchedules(payload);
+    return { ok: true };
+  });
+
+  if (process.platform === "win32") {
+    app.setAppUserModelId("com.codextemple.taskaccomplisher");
+  }
+
   ensureWindow();
   createTray();
   buildSchedules();
@@ -268,11 +373,16 @@ app.whenReady().then(() => {
     }, 300);
   };
 
-  chokidar.watch(schedulesPath, { ignoreInitial: true }).on("change", scheduleReload);
+  chokidar.watch(getSchedulesPath(), { ignoreInitial: true }).on("change", scheduleReload);
 });
 
 // Keep running as tray app
 app.on("window-all-closed", () => {});
+
+app.on("activate", () => {
+  if (!win) ensureWindow();
+  win.show();
+});
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
