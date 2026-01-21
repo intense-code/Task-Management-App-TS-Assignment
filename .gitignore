@@ -10,6 +10,7 @@ releases
 ./release
 /release
 .gitattributes
+.gitattributes1
 advancedMultiOSBuildV2.md
 ./advancedMultiOSBuildV2.md
 simpleElectronBuildV1.md
