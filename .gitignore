@@ -9,6 +9,7 @@ lerna-debug.log*
 releases
 ./release
 /release
+.gitattributes
 advancedMultiOSBuildV2.md
 ./advancedMultiOSBuildV2.md
 simpleElectronBuildV1.md
