@@ -6,6 +6,8 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 # Archeticure Specs
+releases
+release
 advancedMultiOSBuildV2.md
 ./advancedMultiOSBuildV2.md
 simpleElectronBuildV1.md
