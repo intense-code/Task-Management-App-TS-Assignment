@@ -4,46 +4,28 @@
     "details": "",
     "finished": false,
     "remove": false,
-    "enteredDate": "2026-01-17T13:23:47.506Z",
-    "notificationDate": "2026-01-17T13:23:47.506Z",
-    "deadline": "2026-01-17T13:23:47.506Z"
+    "enteredDate": "2026-01-20T12:25:42.923Z",
+    "notificationDate": "2026-01-20T12:25:42.923Z",
+    "deadline": "2026-01-20T12:25:42.924Z"
   },
   "tasks": [
     {
-      "name": "shit",
-      "details": "sj fjfjd",
+      "name": "ss",
+      "details": "s",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-17T10:58:40.027Z",
-      "notificationDate": "2026-01-17T10:58:14.013Z",
-      "deadline": "2026-01-17T10:58:14.013Z"
+      "enteredDate": "2026-01-20T12:26:12.858Z",
+      "notificationDate": "2026-01-20T10:27:00.000Z",
+      "deadline": "2026-01-20T10:22:43.367Z"
     },
     {
-      "name": "sndf sdfkn ",
-      "details": "sndfhk shdkf ",
-      "finished": true,
-      "remove": false,
-      "enteredDate": "2026-01-17T11:00:22.922Z",
-      "notificationDate": "2026-01-17T10:58:14.013Z",
-      "deadline": "2026-01-23T10:58:00.000Z"
-    },
-    {
-      "name": "sdnfsdfn",
-      "details": "lksd flks fjlksdf jklsdjfsljdf",
+      "name": "d",
+      "details": "d",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-17T11:00:33.360Z",
-      "notificationDate": "2026-01-17T10:59:38.164Z",
-      "deadline": "2026-01-17T10:59:38.164Z"
-    },
-    {
-      "name": "should say loading",
-      "details": "here are details agin ",
-      "finished": false,
-      "remove": false,
-      "enteredDate": "2026-01-17T13:23:59.800Z",
-      "notificationDate": "2026-01-17T10:59:38.164Z",
-      "deadline": "2026-01-17T10:59:38.164Z"
+      "enteredDate": "2026-01-20T12:27:50.625Z",
+      "notificationDate": "2026-01-20T12:28:00.000Z",
+      "deadline": "2026-01-20T12:28:00.000Z"
     }
   ]
 }

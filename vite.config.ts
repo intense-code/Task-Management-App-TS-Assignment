@@ -34,11 +34,10 @@ export default defineConfig({
               req.on("end", () => {
                 try {
                   const data = JSON.parse(body)
-                  fs.writeFileSync(
-                    tasksPath,
-                    `${JSON.stringify(data, null, 2)}\n`,
-                    "utf8"
-                  )
+                  const next = `${JSON.stringify(data, null, 2)}\n`
+                  const tmpPath = `${tasksPath}.tmp`
+                  fs.writeFileSync(tmpPath, next, "utf8")
+                  fs.renameSync(tmpPath, tasksPath)
                   res.setHeader("Content-Type", "application/json")
                   res.statusCode = 200
                   res.end(JSON.stringify({ ok: true }))
