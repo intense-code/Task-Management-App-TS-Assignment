@@ -14,8 +14,12 @@ const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 // Global app state.
 let win = null;
 let tray = null;
+let notificationWin = null;
 let lastGoodConfig = { items: [], tasks: [] };
 let trayAvailable = false;
+const suppressNotificationOpen = new WeakSet();
+const notificationQueue = [];
+let notificationActive = false;
 
 function toggleWindow() {
   const w = ensureWindow();
@@ -112,13 +116,103 @@ function openOrFocus(route = "/") {
   w.focus();
 }
 
-// Deliver a desktop notification.
+// Create a small always-on-top notification window.
+function showNotificationWindow({ title, message, route }) {
+  notificationQueue.push({ title, message, route });
+  if (notificationActive) return;
+  showNextNotification();
+}
+
+function showNextNotification() {
+  if (notificationActive) return;
+  const next = notificationQueue.shift();
+  if (!next) return;
+  const { title, message, route } = next;
+
+  notificationActive = true;
+  if (notificationWin && !notificationWin.isDestroyed()) {
+    suppressNotificationOpen.add(notificationWin);
+    notificationWin.close();
+  }
+
+  notificationWin = new BrowserWindow({
+    width: 360,
+    height: 120,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      contextIsolation: true
+    }
+  });
+
+  const safeTitle = String(title || "Reminder").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeMessage = String(message || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const html = `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          body { margin: 0; font-family: Arial, sans-serif; background: #111; color: #f5f5f5; }
+          .wrap { padding: 12px 14px; }
+          .title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+          .msg { font-size: 13px; opacity: 0.9; }
+          .hint { margin-top: 10px; font-size: 11px; opacity: 0.6; }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <div class="title">${safeTitle}</div>
+          <div class="msg">${safeMessage}</div>
+          <div class="hint">Click to open</div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const currentWin = notificationWin;
+
+  currentWin
+    .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    .catch(() => {
+      notificationActive = false;
+      showNextNotification();
+    });
+  currentWin.once("ready-to-show", () => {
+    if (!currentWin.isDestroyed()) currentWin.show();
+  });
+  setTimeout(() => {
+    if (!currentWin.isDestroyed() && !currentWin.isVisible()) {
+      currentWin.show();
+    }
+  }, 150);
+  currentWin.webContents.once("dom-ready", () => {
+    if (currentWin.isDestroyed()) return;
+    try {
+      currentWin.webContents.executeJavaScript(`
+        document.body.addEventListener('click', () => {
+          window.close();
+        });
+      `);
+    } catch {
+      // Ignore if the window is already gone.
+    }
+  });
+  currentWin.on("closed", () => {
+    if (notificationWin === currentWin) notificationWin = null;
+    if (!suppressNotificationOpen.has(currentWin) && route) {
+      openOrFocus(route);
+    }
+    notificationActive = false;
+    showNextNotification();
+  });
+}
+
+// Deliver a desktop notification (custom window that stays until click).
 function notify({ title, message, route }) {
-  const n = new Notification({ title, body: message });
-
-  n.on("click", () => openOrFocus(route || "/"));
-
-  n.show();
+  showNotificationWindow({ title, message, route: route || "/" });
 }
 
 // Track scheduled timers so they can be rebuilt on changes.
