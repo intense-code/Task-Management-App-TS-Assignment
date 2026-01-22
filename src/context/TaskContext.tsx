@@ -77,7 +77,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const timers = new Map<number, NodeJS.Timeout>()
 
     state.tasks.forEach((task) => {
-      if (!task.reschedule_after_completed || !task.finished) return
+      if (!task.reschedule_after_completed) return
       const when = task.notificationDate.getTime()
       const delay = when - Date.now()
       const id = task.enteredDate.getTime()
