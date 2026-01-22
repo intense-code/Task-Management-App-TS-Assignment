@@ -7,7 +7,6 @@ const AppNav: React.FC = () => {
 
   return (
     <nav className={styles.nav}>
-      <div className={styles.brand}>Task Accomplisher</div>
       <button
         type="button"
         className={styles.toggle}
