@@ -4,6 +4,7 @@
     align-items:center;
     justify-content:center;
     width:min(580px, 100%);
+    margin: 0 auto;
     padding:14px;
     background-color:#bbc0b6;
     border:1px solid #43aedb;
@@ -43,6 +44,7 @@ label{
 }
 .tasklist{
     width:min(580px, 100%);
+    margin: 0 auto;
     padding:16px;
     background-color:#9ab7ec;
     border:1px solid #43aedb;

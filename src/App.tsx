@@ -6,10 +6,10 @@ const AppContent = () => {
   const { state } = useTaskContext()
 
   return (
-    <>
+    <div className="app-shell">
       <Nav />
       <Tasks task={state.task} />
-    </>
+    </div>
   )
 }
 
