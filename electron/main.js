@@ -354,7 +354,7 @@ function buildSchedules() {
             message: task.details || "",
             route: "/"
           });
-          if (task.reschedule_after_completed && task.finished) {
+          if (task.reschedule_after_completed) {
             rescheduleTaskInFile(task);
           }
         }
@@ -373,7 +373,7 @@ function buildSchedules() {
           message: task.details || "",
           route: "/"
         });
-        if (task.reschedule_after_completed && task.finished) {
+        if (task.reschedule_after_completed) {
           rescheduleTaskInFile(task);
         }
       }, delay);

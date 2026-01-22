@@ -4,9 +4,9 @@
     "details": "",
     "finished": false,
     "remove": false,
-    "enteredDate": "2026-01-22T11:40:18.736Z",
-    "notificationDate": "2026-01-22T11:40:18.736Z",
-    "deadline": "2026-01-22T11:40:18.736Z",
+    "enteredDate": "2026-01-22T12:04:53.202Z",
+    "notificationDate": "2026-01-22T12:04:53.203Z",
+    "deadline": "2026-01-22T12:04:53.203Z",
     "notify_pressed": false,
     "deadline_pressed": false,
     "reschedule_after_completed": false
@@ -17,9 +17,9 @@
       "details": "ihijh",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-22T10:49:17.961Z",
-      "notificationDate": "2026-01-22T11:24:00.000Z",
-      "deadline": "2026-01-22T11:24:00.000Z",
+      "enteredDate": "2026-01-22T12:09:35.990Z",
+      "notificationDate": "2026-01-23T12:09:35.990Z",
+      "deadline": "2026-01-23T12:09:35.990Z",
       "notify_pressed": true,
       "deadline_pressed": false,
       "reschedule_after_completed": true
@@ -65,12 +65,12 @@
       "details": "fff",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-22T11:22:21.521Z",
-      "notificationDate": "2026-01-22T11:24:00.000Z",
-      "deadline": "2026-01-22T11:24:00.000Z",
+      "enteredDate": "2026-01-22T12:07:24.602Z",
+      "notificationDate": "2026-01-23T12:07:24.602Z",
+      "deadline": "2026-01-23T12:07:24.602Z",
       "notify_pressed": true,
       "deadline_pressed": false,
-      "reschedule_after_completed": false
+      "reschedule_after_completed": true
     },
     {
       "name": "cdd",
@@ -104,6 +104,30 @@
       "enteredDate": "2026-01-22T11:41:00.002Z",
       "notificationDate": "2026-01-23T11:41:00.002Z",
       "deadline": "2026-01-23T11:41:00.002Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": true
+    },
+    {
+      "name": "Nick",
+      "details": "Hello",
+      "finished": false,
+      "remove": false,
+      "enteredDate": "2026-01-22T12:08:18.581Z",
+      "notificationDate": "2026-01-23T12:08:18.581Z",
+      "deadline": "2026-01-23T12:08:18.581Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": true
+    },
+    {
+      "name": "ee",
+      "details": "fjf",
+      "finished": false,
+      "remove": false,
+      "enteredDate": "2026-01-22T12:09:14.923Z",
+      "notificationDate": "2026-01-23T12:09:14.923Z",
+      "deadline": "2026-01-23T12:09:14.923Z",
       "notify_pressed": true,
       "deadline_pressed": false,
       "reschedule_after_completed": true

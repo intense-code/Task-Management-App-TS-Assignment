@@ -4,12 +4,12 @@ Task management app in TS with React using Authentication, ContextAPI, Reducer, 
 For Linux Make sure you have these installed to get sound
 which paplay
 which aplay
-# Features 
+# Features on /
     X Keep notifcation window up until user clicks on it
     X Deadline should automatically match up with the time of notification date when chosen
     X- Play a beep sound
     - Sort tasks in chronological/Ascending name order 
-    - Reschedule after it completes Button
+    H Reschedule after it completes Button
 # In Settings
     - View deadline and/or finshed and not
     - Should have several styling skins
