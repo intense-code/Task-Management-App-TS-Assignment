@@ -4,28 +4,19 @@
     "details": "",
     "finished": false,
     "remove": false,
-    "enteredDate": "2026-01-20T12:25:42.923Z",
-    "notificationDate": "2026-01-20T12:25:42.923Z",
-    "deadline": "2026-01-20T12:25:42.924Z"
+    "enteredDate": "2026-01-21T23:59:56.508Z",
+    "notificationDate": "2026-01-21T23:59:56.508Z",
+    "deadline": "2026-01-21T23:59:56.508Z"
   },
   "tasks": [
     {
-      "name": "ss",
-      "details": "s",
-      "finished": false,
+      "name": "Call Sergery ",
+      "details": "Call for the denteist sergery.",
+      "finished": true,
       "remove": false,
-      "enteredDate": "2026-01-20T12:26:12.858Z",
-      "notificationDate": "2026-01-20T10:27:00.000Z",
-      "deadline": "2026-01-20T10:22:43.367Z"
-    },
-    {
-      "name": "d",
-      "details": "d",
-      "finished": false,
-      "remove": false,
-      "enteredDate": "2026-01-20T12:27:50.625Z",
-      "notificationDate": "2026-01-20T12:28:00.000Z",
-      "deadline": "2026-01-20T12:28:00.000Z"
+      "enteredDate": "2026-01-22T00:31:29.188Z",
+      "notificationDate": "2026-01-22T01:10:00.000Z",
+      "deadline": "2026-01-21T23:59:56.508Z"
     }
   ]
 }
