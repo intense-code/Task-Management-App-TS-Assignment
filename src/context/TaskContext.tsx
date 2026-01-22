@@ -22,8 +22,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       enteredDate: new Date(task.enteredDate),
       notificationDate: new Date(task.notificationDate),
       deadline: new Date(task.deadline),
+      notify_pressed: Boolean(task.notify_pressed),
+      deadline_pressed: Boolean(task.deadline_pressed),
     })
-
+    
     const load = async () => {
       try {
         const res = await fetch("/api/tasks")
