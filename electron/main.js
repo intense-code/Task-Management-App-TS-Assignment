@@ -286,7 +286,17 @@ function buildSchedules() {
 
     const scheduleAt = () => {
       const delay = when.getTime() - Date.now();
-      if (delay <= 0) return;
+      // Allow a small grace window so edits near the minute don't miss notifications.
+      if (delay <= 0) {
+        if (delay >= -60 * 1000) {
+          notify({
+            title: task.name || "Task Reminder",
+            message: task.details || "",
+            route: "/"
+          });
+        }
+        return;
+      }
 
       if (delay > MAX_DELAY_MS) {
         const t = setTimeout(scheduleAt, MAX_DELAY_MS);

@@ -11,6 +11,7 @@ Features
     - Push back all or selected notifications X amount of time
     - WHen marked finished and theres a deadline date that has passed it automatically removes the task so there was time for reviewing the task
     - Have a trashcan for when you erase tasks you can undo the delete and bring them back 
+    - PUt a clock up that shows the time based off of what local standard time zone they have in the settings
 - Add tests to it
     - Verify the window came up and the contents match task.json
     - Test the styles are the correct properties

@@ -1,4 +1,4 @@
-import { toLocalInput } from "../../utils/helpers"
+import { fromLocalInput, toLocalInput } from "../../utils/helpers"
 import { useTaskContext } from "../../context/TaskContext"
 
 const TaskForm: React.FC = () => {
@@ -63,7 +63,7 @@ const TaskForm: React.FC = () => {
             dispatch({
               type: "update_current",
               payload: {
-                notificationDate: e.target.value ? new Date(e.target.value) : new Date(),
+                notificationDate: e.target.value ? fromLocalInput(e.target.value) : new Date(),
               },
             })
           }
@@ -77,7 +77,7 @@ const TaskForm: React.FC = () => {
             dispatch({
               type: "update_current",
               payload: {
-                deadline: e.target.value ? new Date(e.target.value) : new Date(),
+                deadline: e.target.value ? fromLocalInput(e.target.value) : new Date(),
               },
             })
           }
