@@ -52,6 +52,41 @@ function readSchedules() {
   }
 }
 
+function writeSchedules(nextConfig) {
+  const next = `${JSON.stringify(nextConfig, null, 2)}\n`;
+  const tmpPath = `${schedulesPath}.tmp`;
+  fs.writeFileSync(tmpPath, next, "utf-8");
+  fs.renameSync(tmpPath, schedulesPath);
+  lastGoodConfig = nextConfig;
+}
+
+function rescheduleTaskInFile(task) {
+  try {
+    const cfg = readSchedules();
+    const tasks = Array.isArray(cfg.tasks) ? cfg.tasks : [];
+    const nextTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const updated = tasks.map((t) => {
+      if (t.enteredDate !== task.enteredDate) return t;
+      const deadlinePressed = Boolean(t.deadline_pressed);
+      return {
+        ...t,
+        finished: false,
+        remove: false,
+        enteredDate: new Date().toISOString(),
+        notificationDate: nextTime,
+        deadline: deadlinePressed ? t.deadline : nextTime,
+        notify_pressed: true,
+        deadline_pressed: deadlinePressed,
+        reschedule_after_completed: Boolean(t.reschedule_after_completed)
+      };
+    });
+    writeSchedules({ ...cfg, tasks: updated });
+  } catch (err) {
+    const message = err?.message || String(err);
+    console.warn(`Failed to reschedule task: ${message}`);
+  }
+}
+
 // Compute the correct URL for the renderer depending on environment.
 function getAppUrl() {
   const cfg = readSchedules();
@@ -300,7 +335,8 @@ function buildSchedules() {
   }
 
   for (const [index, task] of tasks.entries()) {
-    if (!task || task.finished || task.remove) continue;
+    if (!task || task.remove) continue;
+    if (task.finished && !task.reschedule_after_completed) continue;
     if (typeof task.notificationDate !== "string") continue;
 
     const when = new Date(task.notificationDate);
@@ -318,6 +354,9 @@ function buildSchedules() {
             message: task.details || "",
             route: "/"
           });
+          if (task.reschedule_after_completed && task.finished) {
+            rescheduleTaskInFile(task);
+          }
         }
         return;
       }
@@ -334,6 +373,9 @@ function buildSchedules() {
           message: task.details || "",
           route: "/"
         });
+        if (task.reschedule_after_completed && task.finished) {
+          rescheduleTaskInFile(task);
+        }
       }, delay);
 
       timers.set(id, t);

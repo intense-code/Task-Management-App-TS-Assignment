@@ -1,5 +1,9 @@
 # Task-Management-App-TS-Assignment
 Task management app in TS with React using Authentication, ContextAPI, Reducer, Global State Management, Typed Hooks, Error Handling and Validation
+# Requirments
+For Linux Make sure you have these installed to get sound
+which paplay
+which aplay
 # Features 
     X Keep notifcation window up until user clicks on it
     X Deadline should automatically match up with the time of notification date when chosen
@@ -14,6 +18,7 @@ Task management app in TS with React using Authentication, ContextAPI, Reducer, 
     - WHen marked finished and theres a deadline date that has passed it automatically removes the task so there was time for reviewing the task
     - Have a trashcan for when you erase tasks you can undo the delete and bring them back 
     - PUt a clock up that shows the time based off of what local standard time zone they have in the settings
+    - Default amount of time for reschedule checkbox
 # Authentication
     - Make a landing page
     - Add in 0Auth google

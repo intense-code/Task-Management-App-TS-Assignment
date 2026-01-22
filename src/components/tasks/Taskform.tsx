@@ -39,6 +39,18 @@ const TaskForm: React.FC = () => {
             dispatch({ type: "update_current", payload: { finished: e.target.checked } })
           }
         />
+        <label htmlFor="reschedule">Reschedule after completed</label>
+        <input
+          type="checkbox"
+          id="reschedule"
+          checked={task.reschedule_after_completed}
+          onChange={(e) =>
+            dispatch({
+              type: "update_current",
+              payload: { reschedule_after_completed: e.target.checked },
+            })
+          }
+        />
         <button id="submit" type="submit">Add Task</button>
         </div>
         <div className="taskindex">

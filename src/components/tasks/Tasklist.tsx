@@ -141,10 +141,30 @@ const Tasklist: React.FC = () => {
                   type="checkbox"
                   checked={task.finished}
                   onChange={(e) =>
-                    dispatch({
-                      type: "update_task",
-                      payload: { id: taskId, changes: { finished: e.target.checked } },
-                    })
+                    task.reschedule_after_completed && e.target.checked
+                      ? dispatch({ type: "reschedule_task", payload: taskId })
+                      : dispatch({
+                          type: "update_task",
+                          payload: { id: taskId, changes: { finished: e.target.checked } },
+                        })
+                  }
+                />
+              </div>
+              <div>
+                <label>Reschedule after completed: </label>
+                <input
+                  type="checkbox"
+                  checked={task.reschedule_after_completed}
+                  onChange={(e) =>
+                    e.target.checked && task.finished
+                      ? dispatch({ type: "reschedule_task", payload: taskId })
+                      : dispatch({
+                          type: "update_task",
+                          payload: {
+                            id: taskId,
+                            changes: { reschedule_after_completed: e.target.checked },
+                          },
+                        })
                   }
                 />
               </div>

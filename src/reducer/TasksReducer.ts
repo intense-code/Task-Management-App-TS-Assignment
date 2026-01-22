@@ -13,6 +13,7 @@ export type TaskAction =
   | { type: "reset_current" }
   | { type: "remove_task"; payload: number }
   | { type: "update_task"; payload: { id: number; changes: Partial<Task> } }
+  | { type: "reschedule_task"; payload: number }
   | { type: "notify_pressed"; payload: boolean }
   | { type: "deadline_pressed"; payload: boolean }
 export const initialTask: Task = {
@@ -24,7 +25,8 @@ export const initialTask: Task = {
   notificationDate: new Date(),
   deadline: new Date(),
   notify_pressed: false,
-  deadline_pressed: false
+  deadline_pressed: false,
+  reschedule_after_completed: false
 }
 
 export const initialState: TaskState = {
@@ -47,6 +49,17 @@ export const taskReducer = (state: TaskState, action: TaskAction): TaskState => 
 
     if ("deadline" in changes) {
       deadlinePressed = true;
+    }
+
+    if ("finished" in changes && changes.finished && next.reschedule_after_completed) {
+      const nextTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      next = {
+        ...next,
+        finished: false,
+        notificationDate: nextTime,
+        deadline: deadlinePressed ? next.deadline : nextTime
+      };
+      notifyPressed = true;
     }
 
     return {
@@ -81,12 +94,59 @@ export const taskReducer = (state: TaskState, action: TaskAction): TaskState => 
     case "update_task":
       return {
         ...state,
-        tasks: state.tasks.map((tsk) =>
-          tsk.enteredDate.getTime() === action.payload.id
-            ? applyDateRules(tsk, action.payload.changes)
-            : tsk
-        ),
+        tasks: state.tasks.flatMap((tsk) => {
+          if (tsk.enteredDate.getTime() !== action.payload.id) return [tsk]
+
+          const changes = action.payload.changes
+          const finishedNow =
+            "finished" in changes ? Boolean(changes.finished) : tsk.finished
+          const rescheduleEnabled =
+            "reschedule_after_completed" in changes
+              ? Boolean(changes.reschedule_after_completed)
+              : tsk.reschedule_after_completed
+          const shouldReschedule = finishedNow && rescheduleEnabled
+
+          if (!shouldReschedule) {
+            return [applyDateRules(tsk, changes)]
+          }
+
+          const nextTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+          const deadlinePressed = tsk.deadline_pressed
+          const nextTask: Task = {
+            ...tsk,
+            finished: false,
+            remove: false,
+            enteredDate: new Date(),
+            notificationDate: nextTime,
+            deadline: deadlinePressed ? tsk.deadline : nextTime,
+            notify_pressed: true,
+            deadline_pressed: deadlinePressed
+          }
+
+          return [nextTask]
+        }),
       }
+    case "reschedule_task": {
+      const nextTime = new Date(Date.now() + 24 * 60 * 60 * 1000)
+      return {
+        ...state,
+        tasks: state.tasks.flatMap((tsk) => {
+          if (tsk.enteredDate.getTime() !== action.payload) return [tsk]
+          const deadlinePressed = tsk.deadline_pressed
+          const nextTask: Task = {
+            ...tsk,
+            finished: false,
+            remove: false,
+            enteredDate: new Date(),
+            notificationDate: nextTime,
+            deadline: deadlinePressed ? tsk.deadline : nextTime,
+            notify_pressed: true,
+            deadline_pressed: deadlinePressed
+          }
+          return [nextTask]
+        }),
+      }
+    }
     case "notify_pressed":
       return { ...state, task: { ...state.task, notify_pressed: action.payload } }
     case "deadline_pressed":
