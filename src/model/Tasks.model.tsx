@@ -8,4 +8,5 @@ export default interface Task {
     deadline: Date;
     notify_pressed: boolean;
     deadline_pressed: boolean;
+    reschedule_after_completed: boolean;
 }

@@ -24,6 +24,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       deadline: new Date(task.deadline),
       notify_pressed: Boolean(task.notify_pressed),
       deadline_pressed: Boolean(task.deadline_pressed),
+      reschedule_after_completed: Boolean(task.reschedule_after_completed),
     })
     
     const load = async () => {
@@ -70,6 +71,29 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Ignore persistence errors
     })
   }, [initialized, state])
+
+  useEffect(() => {
+    if (!initialized) return
+    const timers = new Map<number, NodeJS.Timeout>()
+
+    state.tasks.forEach((task) => {
+      if (!task.reschedule_after_completed || !task.finished) return
+      const when = task.notificationDate.getTime()
+      const delay = when - Date.now()
+      const id = task.enteredDate.getTime()
+
+      const schedule = () => dispatch({ type: "reschedule_task", payload: id })
+      if (delay <= 0) {
+        schedule()
+        return
+      }
+      timers.set(id, setTimeout(schedule, delay))
+    })
+
+    return () => {
+      for (const [, t] of timers) clearTimeout(t)
+    }
+  }, [initialized, state.tasks, dispatch])
 
   return (
     <TaskContext.Provider value={{ state, dispatch, initialized }}>
