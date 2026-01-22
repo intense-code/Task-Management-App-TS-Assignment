@@ -1,8 +1,12 @@
 import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFile } from "node:child_process";
 import chokidar from "chokidar";
+
+// Allow autoplay for notification sounds.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 // Module path helpers (ESM).
 const __filename = fileURLToPath(import.meta.url);
@@ -144,12 +148,16 @@ function showNextNotification() {
     skipTaskbar: true,
     show: false,
     webPreferences: {
-      contextIsolation: true
+      contextIsolation: true,
+      autoplayPolicy: "no-user-gesture-required"
     }
   });
 
   const safeTitle = String(title || "Reminder").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeMessage = String(message || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const soundUrl = pathToFileURL(
+    path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav")
+  ).toString();
   const html = `
     <html>
       <head>
@@ -168,6 +176,11 @@ function showNextNotification() {
           <div class="msg">${safeMessage}</div>
           <div class="hint">Click to open</div>
         </div>
+        <script>
+          const tone = new Audio("${soundUrl}");
+          tone.volume = 1.0;
+          tone.play().catch(() => {});
+        </script>
       </body>
     </html>
   `;
@@ -212,6 +225,17 @@ function showNextNotification() {
 
 // Deliver a desktop notification (custom window that stays until click).
 function notify({ title, message, route }) {
+  const soundPath = path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav");
+  if (process.platform === "linux") {
+    if (fs.existsSync("/usr/bin/paplay")) {
+      execFile("/usr/bin/paplay", [soundPath], () => {});
+    } else if (fs.existsSync("/usr/bin/aplay")) {
+      execFile("/usr/bin/aplay", [soundPath], () => {});
+    }
+  }
+  if (typeof app.beep === "function") {
+    app.beep();
+  }
   showNotificationWindow({ title, message, route: route || "/" });
 }
 
@@ -383,7 +407,19 @@ app.whenReady().then(() => {
     }, 300);
   };
 
-  chokidar.watch(schedulesPath, { ignoreInitial: true }).on("change", scheduleReload);
+  const schedulesDir = path.dirname(schedulesPath);
+  chokidar
+    .watch(schedulesDir, { ignoreInitial: true })
+    .on("add", (changedPath) => {
+      if (path.basename(changedPath) === path.basename(schedulesPath)) {
+        scheduleReload();
+      }
+    })
+    .on("change", (changedPath) => {
+      if (path.basename(changedPath) === path.basename(schedulesPath)) {
+        scheduleReload();
+      }
+    });
 });
 
 // Keep running as tray app
