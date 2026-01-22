@@ -4,12 +4,14 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 
+// Module path helpers (ESM).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appRoot = path.join(__dirname, "..");
 const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
+// Global app state.
 let win = null;
 let tray = null;
 let lastGoodConfig = { items: [], tasks: [] };
@@ -28,6 +30,7 @@ function toggleWindow() {
 // Keep track of timers so we can rebuild schedules when JSON changes
 const timers = new Map();
 
+// Read schedules with a safe fallback to the last known-good config.
 function readSchedules() {
   try {
     const raw = fs.readFileSync(schedulesPath, "utf-8");
@@ -41,6 +44,7 @@ function readSchedules() {
   }
 }
 
+// Compute the correct URL for the renderer depending on environment.
 function getAppUrl() {
   const cfg = readSchedules();
 
@@ -52,6 +56,7 @@ function getAppUrl() {
   return prod.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
 }
 
+// Create the BrowserWindow lazily and keep a single instance.
 function ensureWindow() {
   if (win && !win.isDestroyed()) return win;
 
@@ -86,6 +91,7 @@ function ensureWindow() {
   return win;
 }
 
+// Bring the app to the front (or reopen) on demand.
 function openOrFocus(route = "/") {
   const w = ensureWindow();
 
@@ -106,6 +112,7 @@ function openOrFocus(route = "/") {
   w.focus();
 }
 
+// Deliver a desktop notification.
 function notify({ title, message, route }) {
   const n = new Notification({ title, body: message });
 
@@ -114,11 +121,13 @@ function notify({ title, message, route }) {
   n.show();
 }
 
+// Track scheduled timers so they can be rebuilt on changes.
 function clearAllTimers() {
   for (const [, t] of timers) clearTimeout(t);
   timers.clear();
 }
 
+// Build all schedules from tasks.json (recurring + one-off tasks).
 // Schedules:
 // - everyMinutes: repeats
 // - at: "HH:MM" daily
@@ -206,6 +215,7 @@ function buildSchedules() {
   }
 }
 
+// Create a tray icon and menu, if an icon is available.
 function createTray() {
   // If you don’t set an icon, tray may be invisible on some setups.
   // Add one later: new Tray(path.join(__dirname, "tray.png"))
@@ -239,6 +249,7 @@ function createTray() {
   tray.on("click", () => openOrFocus("/"));
 }
 
+// App lifecycle: bootstrap window, tray, and schedulers.
 app.whenReady().then(() => {
   ensureWindow();
   createTray();
@@ -274,6 +285,7 @@ app.whenReady().then(() => {
 // Keep running as tray app
 app.on("window-all-closed", () => {});
 
+// Clean up on quit.
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });
