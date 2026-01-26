@@ -78,11 +78,21 @@
 }
 
 .skinSelect {
-  background: transparent;
-  color: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: var(--nav-bg-2);
+  color: var(--nav-text);
+  border: 1px solid var(--nav-accent);
   border-radius: 8px;
   padding: 0.3rem 0.6rem;
+}
+
+.skinSelect option {
+  background: var(--nav-bg-2);
+  color: var(--nav-text);
+}
+
+.skinSelect:focus {
+  outline: 2px solid var(--nav-accent);
+  outline-offset: 2px;
 }
 
 .srOnly {

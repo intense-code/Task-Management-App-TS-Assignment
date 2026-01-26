@@ -29,3 +29,7 @@ which aplay
     - Test the styles are the correct properties
     - Make sure all links say the right values and lead to the right routing
 
+Unit: npm test
+UI: npm run test:ui
+E2E: npm run test:e2e
+E2E UI: npm run test:e2e:ui
