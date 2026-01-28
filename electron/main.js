@@ -1,19 +1,29 @@
 import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { execFile } from "node:child_process";
 import chokidar from "chokidar";
 
+// Allow autoplay for notification sounds.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
+// Module path helpers (ESM).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appRoot = path.join(__dirname, "..");
 const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
+// Global app state.
 let win = null;
 let tray = null;
+let notificationWin = null;
 let lastGoodConfig = { items: [], tasks: [] };
 let trayAvailable = false;
+const suppressNotificationOpen = new WeakSet();
+const notificationQueue = [];
+let notificationActive = false;
 
 function toggleWindow() {
   const w = ensureWindow();
@@ -28,6 +38,7 @@ function toggleWindow() {
 // Keep track of timers so we can rebuild schedules when JSON changes
 const timers = new Map();
 
+// Read schedules with a safe fallback to the last known-good config.
 function readSchedules() {
   try {
     const raw = fs.readFileSync(schedulesPath, "utf-8");
@@ -41,6 +52,42 @@ function readSchedules() {
   }
 }
 
+function writeSchedules(nextConfig) {
+  const next = `${JSON.stringify(nextConfig, null, 2)}\n`;
+  const tmpPath = `${schedulesPath}.tmp`;
+  fs.writeFileSync(tmpPath, next, "utf-8");
+  fs.renameSync(tmpPath, schedulesPath);
+  lastGoodConfig = nextConfig;
+}
+
+function rescheduleTaskInFile(task) {
+  try {
+    const cfg = readSchedules();
+    const tasks = Array.isArray(cfg.tasks) ? cfg.tasks : [];
+    const nextTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const updated = tasks.map((t) => {
+      if (t.enteredDate !== task.enteredDate) return t;
+      const deadlinePressed = Boolean(t.deadline_pressed);
+      return {
+        ...t,
+        finished: false,
+        remove: false,
+        enteredDate: new Date().toISOString(),
+        notificationDate: nextTime,
+        deadline: deadlinePressed ? t.deadline : nextTime,
+        notify_pressed: true,
+        deadline_pressed: deadlinePressed,
+        reschedule_after_completed: Boolean(t.reschedule_after_completed)
+      };
+    });
+    writeSchedules({ ...cfg, tasks: updated });
+  } catch (err) {
+    const message = err?.message || String(err);
+    console.warn(`Failed to reschedule task: ${message}`);
+  }
+}
+
+// Compute the correct URL for the renderer depending on environment.
 function getAppUrl() {
   const cfg = readSchedules();
 
@@ -52,6 +99,7 @@ function getAppUrl() {
   return prod.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
 }
 
+// Create the BrowserWindow lazily and keep a single instance.
 function ensureWindow() {
   if (win && !win.isDestroyed()) return win;
 
@@ -86,6 +134,7 @@ function ensureWindow() {
   return win;
 }
 
+// Bring the app to the front (or reopen) on demand.
 function openOrFocus(route = "/") {
   const w = ensureWindow();
 
@@ -106,19 +155,132 @@ function openOrFocus(route = "/") {
   w.focus();
 }
 
-function notify({ title, message, route }) {
-  const n = new Notification({ title, body: message });
-
-  n.on("click", () => openOrFocus(route || "/"));
-
-  n.show();
+// Create a small always-on-top notification window.
+function showNotificationWindow({ title, message, route }) {
+  notificationQueue.push({ title, message, route });
+  if (notificationActive) return;
+  showNextNotification();
 }
 
+function showNextNotification() {
+  if (notificationActive) return;
+  const next = notificationQueue.shift();
+  if (!next) return;
+  const { title, message, route } = next;
+
+  notificationActive = true;
+  if (notificationWin && !notificationWin.isDestroyed()) {
+    suppressNotificationOpen.add(notificationWin);
+    notificationWin.close();
+  }
+
+  notificationWin = new BrowserWindow({
+    width: 360,
+    height: 120,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      autoplayPolicy: "no-user-gesture-required"
+    }
+  });
+
+  const safeTitle = String(title || "Reminder").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeMessage = String(message || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const soundUrl = pathToFileURL(
+    path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav")
+  ).toString();
+  const html = `
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          body { margin: 0; font-family: Arial, sans-serif; background: #111; color: #f5f5f5; }
+          .wrap { padding: 12px 14px; }
+          .title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+          .msg { font-size: 13px; opacity: 0.9; }
+          .hint { margin-top: 10px; font-size: 11px; opacity: 0.6; }
+        </style>
+      </head>
+      <body>
+        <div class="wrap">
+          <div class="title">${safeTitle}</div>
+          <div class="msg">${safeMessage}</div>
+          <div class="hint">Click to open</div>
+        </div>
+        <script>
+          const tone = new Audio("${soundUrl}");
+          tone.volume = 1.0;
+          tone.play().catch(() => {});
+        </script>
+      </body>
+    </html>
+  `;
+
+  const currentWin = notificationWin;
+
+  currentWin
+    .loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    .catch(() => {
+      notificationActive = false;
+      showNextNotification();
+    });
+  currentWin.once("ready-to-show", () => {
+    if (!currentWin.isDestroyed()) currentWin.show();
+  });
+  setTimeout(() => {
+    if (!currentWin.isDestroyed() && !currentWin.isVisible()) {
+      currentWin.show();
+    }
+  }, 150);
+  currentWin.webContents.once("dom-ready", () => {
+    if (currentWin.isDestroyed()) return;
+    try {
+      currentWin.webContents.executeJavaScript(`
+        document.body.addEventListener('click', () => {
+          window.close();
+        });
+      `);
+    } catch {
+      // Ignore if the window is already gone.
+    }
+  });
+  currentWin.on("closed", () => {
+    if (notificationWin === currentWin) notificationWin = null;
+    if (!suppressNotificationOpen.has(currentWin) && route) {
+      openOrFocus(route);
+    }
+    notificationActive = false;
+    showNextNotification();
+  });
+}
+
+// Deliver a desktop notification (custom window that stays until click).
+function notify({ title, message, route }) {
+  const soundPath = path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav");
+  if (process.platform === "linux") {
+    if (fs.existsSync("/usr/bin/paplay")) {
+      execFile("/usr/bin/paplay", [soundPath], () => {});
+    } else if (fs.existsSync("/usr/bin/aplay")) {
+      execFile("/usr/bin/aplay", [soundPath], () => {});
+    }
+  }
+  if (typeof app.beep === "function") {
+    app.beep();
+  }
+  showNotificationWindow({ title, message, route: route || "/" });
+}
+
+// Track scheduled timers so they can be rebuilt on changes.
 function clearAllTimers() {
   for (const [, t] of timers) clearTimeout(t);
   timers.clear();
 }
 
+// Build all schedules from tasks.json (recurring + one-off tasks).
 // Schedules:
 // - everyMinutes: repeats
 // - at: "HH:MM" daily
@@ -173,7 +335,8 @@ function buildSchedules() {
   }
 
   for (const [index, task] of tasks.entries()) {
-    if (!task || task.finished || task.remove) continue;
+    if (!task || task.remove) continue;
+    if (task.finished && !task.reschedule_after_completed) continue;
     if (typeof task.notificationDate !== "string") continue;
 
     const when = new Date(task.notificationDate);
@@ -183,7 +346,20 @@ function buildSchedules() {
 
     const scheduleAt = () => {
       const delay = when.getTime() - Date.now();
-      if (delay <= 0) return;
+      // Allow a small grace window so edits near the minute don't miss notifications.
+      if (delay <= 0) {
+        if (delay >= -60 * 1000) {
+          notify({
+            title: task.name || "Task Reminder",
+            message: task.details || "",
+            route: "/"
+          });
+          if (task.reschedule_after_completed) {
+            rescheduleTaskInFile(task);
+          }
+        }
+        return;
+      }
 
       if (delay > MAX_DELAY_MS) {
         const t = setTimeout(scheduleAt, MAX_DELAY_MS);
@@ -197,6 +373,9 @@ function buildSchedules() {
           message: task.details || "",
           route: "/"
         });
+        if (task.reschedule_after_completed) {
+          rescheduleTaskInFile(task);
+        }
       }, delay);
 
       timers.set(id, t);
@@ -206,6 +385,7 @@ function buildSchedules() {
   }
 }
 
+// Create a tray icon and menu, if an icon is available.
 function createTray() {
   // If you don’t set an icon, tray may be invisible on some setups.
   // Add one later: new Tray(path.join(__dirname, "tray.png"))
@@ -239,6 +419,7 @@ function createTray() {
   tray.on("click", () => openOrFocus("/"));
 }
 
+// App lifecycle: bootstrap window, tray, and schedulers.
 app.whenReady().then(() => {
   ensureWindow();
   createTray();
@@ -268,12 +449,25 @@ app.whenReady().then(() => {
     }, 300);
   };
 
-  chokidar.watch(schedulesPath, { ignoreInitial: true }).on("change", scheduleReload);
+  const schedulesDir = path.dirname(schedulesPath);
+  chokidar
+    .watch(schedulesDir, { ignoreInitial: true })
+    .on("add", (changedPath) => {
+      if (path.basename(changedPath) === path.basename(schedulesPath)) {
+        scheduleReload();
+      }
+    })
+    .on("change", (changedPath) => {
+      if (path.basename(changedPath) === path.basename(schedulesPath)) {
+        scheduleReload();
+      }
+    });
 });
 
 // Keep running as tray app
 app.on("window-all-closed", () => {});
 
+// Clean up on quit.
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });

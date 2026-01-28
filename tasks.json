@@ -4,28 +4,37 @@
     "details": "",
     "finished": false,
     "remove": false,
-    "enteredDate": "2026-01-20T12:25:42.923Z",
-    "notificationDate": "2026-01-20T12:25:42.923Z",
-    "deadline": "2026-01-20T12:25:42.924Z"
+    "enteredDate": "2026-01-26T13:43:39.727Z",
+    "notificationDate": "2026-01-26T13:43:39.727Z",
+    "deadline": "2026-01-26T13:43:39.727Z",
+    "notify_pressed": false,
+    "deadline_pressed": false,
+    "reschedule_after_completed": false
   },
   "tasks": [
     {
-      "name": "ss",
-      "details": "s",
+      "name": "lsdfjfff",
+      "details": "jflsdljsd",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-20T12:26:12.858Z",
-      "notificationDate": "2026-01-20T10:27:00.000Z",
-      "deadline": "2026-01-20T10:22:43.367Z"
+      "enteredDate": "2026-01-22T16:25:37.806Z",
+      "notificationDate": "2026-01-23T16:28:00.000Z",
+      "deadline": "2026-01-23T16:28:00.000Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": false
     },
     {
-      "name": "d",
-      "details": "d",
+      "name": "cleana living room",
+      "details": "Make sure to dust and clean the living room and all the walls to be scrubed as well. ",
       "finished": false,
       "remove": false,
-      "enteredDate": "2026-01-20T12:27:50.625Z",
-      "notificationDate": "2026-01-20T12:28:00.000Z",
-      "deadline": "2026-01-20T12:28:00.000Z"
+      "enteredDate": "2026-01-26T13:45:01.132Z",
+      "notificationDate": "2026-01-26T13:45:00.000Z",
+      "deadline": "2026-01-26T13:45:00.000Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": false
     }
   ]
 }

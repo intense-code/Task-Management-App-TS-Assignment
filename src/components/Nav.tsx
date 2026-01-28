@@ -2,12 +2,16 @@
 import { useState } from "react"
 import styles from "./Nav.module.css"
 
-const AppNav: React.FC = () => {
+type NavProps = {
+  skin: "classic" | "sunset" | "mint"
+  setSkin: (skin: "classic" | "sunset" | "mint") => void
+}
+
+const AppNav: React.FC<NavProps> = ({ skin, setSkin }) => {
   const [open, setOpen] = useState(false)
 
   return (
     <nav className={styles.nav}>
-      <div className={styles.brand}>Task Accomplisher</div>
       <button
         type="button"
         className={styles.toggle}
@@ -36,6 +40,18 @@ const AppNav: React.FC = () => {
         <button type="button" className={styles.logout}>
           Logout
         </button>
+        <label className={styles.skinLabel}>
+          Skin
+          <select
+            className={styles.skinSelect}
+            value={skin}
+            onChange={(e) => setSkin(e.target.value as NavProps["skin"])}
+          >
+            <option value="classic">Classic</option>
+            <option value="sunset">Sunset</option>
+            <option value="mint">Mint</option>
+          </select>
+        </label>
       </div>
     </nav>
   )

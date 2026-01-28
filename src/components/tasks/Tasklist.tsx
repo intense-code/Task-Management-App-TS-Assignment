@@ -1,7 +1,7 @@
 import { useState } from "react"
 import "./tasks.model.css"
 import { useTaskContext } from "../../context/TaskContext"
-import { toLocalInput } from "../../utils/helpers"
+import { fromLocalInput, toLocalInput } from "../../utils/helpers"
 type dateStrings = {
     time: string;
     date: string;
@@ -91,7 +91,7 @@ const Tasklist: React.FC = () => {
                           id: taskId,
                           changes: {
                             notificationDate: e.target.value
-                              ? new Date(e.target.value)
+                              ? fromLocalInput(e.target.value)
                               : new Date(),
                           },
                         },
@@ -121,7 +121,7 @@ const Tasklist: React.FC = () => {
                           id: taskId,
                           changes: {
                             deadline: e.target.value
-                              ? new Date(e.target.value)
+                              ? fromLocalInput(e.target.value)
                               : new Date(),
                           },
                         },
@@ -141,10 +141,30 @@ const Tasklist: React.FC = () => {
                   type="checkbox"
                   checked={task.finished}
                   onChange={(e) =>
-                    dispatch({
-                      type: "update_task",
-                      payload: { id: taskId, changes: { finished: e.target.checked } },
-                    })
+                    task.reschedule_after_completed && e.target.checked
+                      ? dispatch({ type: "reschedule_task", payload: taskId })
+                      : dispatch({
+                          type: "update_task",
+                          payload: { id: taskId, changes: { finished: e.target.checked } },
+                        })
+                  }
+                />
+              </div>
+              <div>
+                <label>Reschedule after completed: </label>
+                <input
+                  type="checkbox"
+                  checked={task.reschedule_after_completed}
+                  onChange={(e) =>
+                    e.target.checked && task.finished
+                      ? dispatch({ type: "reschedule_task", payload: taskId })
+                      : dispatch({
+                          type: "update_task",
+                          payload: {
+                            id: taskId,
+                            changes: { reschedule_after_completed: e.target.checked },
+                          },
+                        })
                   }
                 />
               </div>

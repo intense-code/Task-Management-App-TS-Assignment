@@ -5,5 +5,8 @@ export default interface Task {
     remove: boolean;
     enteredDate: Date;
     notificationDate: Date;
-    deadline:Date
+    deadline: Date;
+    notify_pressed: boolean;
+    deadline_pressed: boolean;
+    reschedule_after_completed: boolean;
 }
