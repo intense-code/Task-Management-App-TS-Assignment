@@ -10,6 +10,28 @@
   margin: 0 auto;
 }
 
+.landing-shell {
+  position: relative;
+}
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 15, 15, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.login-overlay .login-status {
+  padding: 16px 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #151515;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
 .login-status {
   margin-top: 12px;
   font-weight: 600;

@@ -28,7 +28,7 @@ const AppNav: React.FC<NavProps> = ({ skin, setSkin }) => {
         id="primary-navigation"
         className={`${styles.menu} ${open ? styles.menuOpen : ""}`}
       >
-        <a className={styles.link} href="#tasks">
+        <a className={styles.link} href="/taskapp">
           Tasks
         </a>
         <a className={styles.link} href="#calendar">
@@ -36,6 +36,9 @@ const AppNav: React.FC<NavProps> = ({ skin, setSkin }) => {
         </a>
         <a className={styles.link} href="#settings">
           Settings
+        </a>
+        <a className={styles.link} href="/">
+          Profile
         </a>
         <button type="button" className={styles.logout}>
           Logout

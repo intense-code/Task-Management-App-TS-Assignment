@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import GoogleLoginButton from "./components/auth/GoogleLoginButton"; // Google sign-in widget.
 import ProfileEditor from "./components/auth/ProfileEditor"; // Editable profile form.
 import type { User } from "./model/auth"; // User shape shared with the API.
-
+import Nav from "./components/nav/Nav"
+import {useSkin} from "./hooks/useSkin"
+const { skin, setSkin } = useSkin();
 type MeResponse = { user: User } | { error: string }; // /me API response union.
 
 export default function App() { // Main app component.
@@ -37,19 +39,10 @@ export default function App() { // Main app component.
   } // End logout.
 
   return ( // Render UI.
-    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>{/* App wrapper */}
-      <h1>Google Sign-In</h1> {/* Page title */}
+    <div className="landing-shell" style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>{/* App wrapper */}
+      <Nav skin={skin} setSkin={setSkin} />
 
-      {loggingIn ? (
-        <div className="login-status">
-          Logging you in
-          <span className="login-dots" aria-hidden="true">
-            <span>.</span>
-            <span>.</span>
-            <span>.</span>
-          </span>
-        </div>
-      ) : !user ? ( // Show login if no user.
+      {loggingIn ? null : !user ? ( // Show login if no user.
         <> {/* Fragment wrapper */}
           <p>Sign in:</p> {/* Prompt text */}
           <GoogleLoginButton
@@ -118,6 +111,18 @@ export default function App() { // Main app component.
           /> {/* Profile editor form */}
         </div>
       )}
+      {loggingIn ? (
+        <div className="login-overlay" role="status" aria-live="polite">
+          <div className="login-status">
+            Logging you in
+            <span className="login-dots" aria-hidden="true">
+              <span>.</span>
+              <span>.</span>
+              <span>.</span>
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
   ); // End render.
 } // End App component.
