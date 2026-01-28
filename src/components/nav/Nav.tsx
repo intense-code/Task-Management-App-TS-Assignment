@@ -1,6 +1,8 @@
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import styles from "./Nav.module.css"
+import { useLogout } from "../../hooks/useLogout"
 
 type NavProps = {
   skin: "classic" | "sunset" | "mint"
@@ -9,6 +11,8 @@ type NavProps = {
 
 const AppNav: React.FC<NavProps> = ({ skin, setSkin }) => {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  const { logout, loading: logoutLoading } = useLogout(() => navigate("/"))
 
   return (
     <nav className={styles.nav}>
@@ -40,8 +44,8 @@ const AppNav: React.FC<NavProps> = ({ skin, setSkin }) => {
         <a className={styles.link} href="/">
           Profile
         </a>
-        <button type="button" className={styles.logout}>
-          Logout
+        <button type="button" className={styles.logout} onClick={logout} disabled={logoutLoading}>
+          {logoutLoading ? "Logging out..." : "Logout"}
         </button>
         <label className={styles.skinLabel}>
           Skin

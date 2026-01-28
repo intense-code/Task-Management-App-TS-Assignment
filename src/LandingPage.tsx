@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react"; // React state and lifecycle hooks.
 import { useNavigate } from "react-router-dom";
+import { useLogout } from "./hooks/useLogout";
 import GoogleLoginButton from "./components/auth/GoogleLoginButton"; // Google sign-in widget.
 import ProfileEditor from "./components/auth/ProfileEditor"; // Editable profile form.
 import type { User } from "./model/auth"; // User shape shared with the API.
-import Nav from "./components/nav/Nav"
-import {useSkin} from "./hooks/useSkin"
-const { skin, setSkin } = useSkin();
+import Nav from "./components/nav/Nav";
+import { useSkin } from "./hooks/useSkin";
+
 type MeResponse = { user: User } | { error: string }; // /me API response union.
 
-export default function App() { // Main app component.
+export default function LandingPage() { // Main app component.
   const [user, setUser] = useState<User | null>(null); // Current session user.
   const [loggingIn, setLoggingIn] = useState(false);
   const api = import.meta.env.VITE_API_URL; // API base URL from env.
   const navigate = useNavigate();
+  const { logout, loading: logoutLoading } = useLogout(() => setUser(null));
+  const { skin, setSkin } = useSkin();
 
   async function loadMe() { // Fetch the current session user.
     const res = await fetch(`${api}/me`, { credentials: "include" }); // Send cookie.
@@ -30,20 +33,11 @@ export default function App() { // Main app component.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps means only on first render.
 
-  async function logout() { // Log out by clearing session cookie.
-    await fetch(`${api}/auth/logout`, { // POST to logout endpoint.
-      method: "POST", // Logout uses POST.
-      credentials: "include", // Include session cookie.
-    });
-    setUser(null); // Clear local user state.
-  } // End logout.
-
   return ( // Render UI.
     <div className="landing-shell" style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>{/* App wrapper */}
-      <Nav skin={skin} setSkin={setSkin} />
-
       {loggingIn ? null : !user ? ( // Show login if no user.
         <> {/* Fragment wrapper */}
+          <Nav skin={skin} setSkin={setSkin} />
           <p>Sign in:</p> {/* Prompt text */}
           <GoogleLoginButton
             onLogin={(u) => {
@@ -95,12 +89,13 @@ export default function App() { // Main app component.
           </div> 
 
           <div style={{ marginTop: 16, display: "flex", gap: 12 }}>{/* Action buttons */}
-            <button onClick={logout} style={{ padding: "10px 14px" }}>{/* Logout */}
-              Logout {/* Button label */}
+            <button onClick={logout} style={{ padding: "10px 14px" }} disabled={logoutLoading}>{/* Logout */}
+              {logoutLoading ? "Logging out..." : "Logout"} {/* Button label */}
             </button> {/* End logout button */}
             <button onClick={loadMe} style={{ padding: "10px 14px" }}>{/* Refresh */}
               Refresh profile {/* Button label */}
             </button> {/* End refresh button */}
+              {/* End refresh button */}
           </div> {/* End action buttons */}
 
           <ProfileEditor
