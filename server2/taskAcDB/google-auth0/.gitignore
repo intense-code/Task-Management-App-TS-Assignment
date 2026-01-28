@@ -5,13 +5,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-server/.env
 /server/.env
-# Archeticure Specs
-advancedMultiOSBuildV2.md
-./advancedMultiOSBuildV2.md
-simpleElectronBuildV1.md
-./simpleElectronBuildV1.md
+/server/googleCreds.json.asc
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 

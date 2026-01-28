@@ -1,8 +1,15 @@
 {
-  "name": "taskacomplisher",
+  "name": "task_accomplisher",
+  "author": "Nicholas Anthony Lacapria",
+  "description": "Application designed to help project managers accomplish tasks-projects in an orderly fashion. Depending on what time the task is set for, it will alarm the user with a notification stating the project and its descriptions.",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.2.1",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:intense-code/Task-Management-App-TS-Assignment.git"
+  },
   "scripts": {
     "vite": "vite",
     "build": "tsc -b && vite build",
@@ -21,17 +28,18 @@
     "react": "^19.2.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.0",
+    "react-router": "^7.13.0",
     "react-router-dom": "^7.12.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.55.0",
-    "@types/node": "^24.10.1",
-    "@types/react": "^19.2.5",
-    "@types/react-dom": "^19.2.3",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/ui": "^2.1.9",
     "chokidar": "^5.0.0",
