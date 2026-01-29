@@ -6,6 +6,7 @@ import ProfileEditor from "./components/auth/ProfileEditor"; // Editable profile
 import type { User } from "./model/auth"; // User shape shared with the API.
 import Nav from "./components/nav/Nav";
 import { useSkin } from "./hooks/useSkin";
+import "./LandingPage.model.css";
 
 type MeResponse = { user: User } | { error: string }; // /me API response union.
 
@@ -34,11 +35,16 @@ export default function LandingPage() { // Main app component.
   }, []); // Empty deps means only on first render.
 
   return ( // Render UI.
-    <div className="landing-shell" style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>{/* App wrapper */}
+    <div className="landing-shell">{/* App wrapper */}
       {loggingIn ? null : !user ? ( // Show login if no user.
         <> {/* Fragment wrapper */}
-          <Nav skin={skin} setSkin={setSkin} />
-          <p>Sign in:</p> {/* Prompt text */}
+          <div className="landing-nav">
+            <Nav skin={skin} setSkin={setSkin} />
+          </div>
+          <div>
+            <img src='../electron/16.jpeg'id="landing-logo" />
+          </div>
+          <h1>Task Accomplisher</h1> {/* Prompt text */}
           <GoogleLoginButton
             onLogin={(u) => {
               setLoggingIn(true);
@@ -48,53 +54,45 @@ export default function LandingPage() { // Main app component.
           /> {/* Google login */}
         </>
       ) : (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            border: "1px solid #ddd",
-            borderRadius: 12,
-            maxWidth: 700,
-          }}
-        > {/* Profile card */}
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>{/* Avatar row */}
+        <div className="profile-card"> {/* Profile card */}
+          <div className="profile-row">{/* Avatar row */}
             {user.picture ? ( // Show avatar if present.
               <img
                 src={user.picture}
                 alt="avatar"
                 width={64}
                 height={64}
-                style={{ borderRadius: "50%" }}
+                className="profile-avatar"
               /> 
             ) : (
               <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: "50%",
-                  background: "#eee",
-                }}
+                className="profile-avatar profile-avatar--placeholder"
               />  
             )} {/* End avatar conditional */}
 
             <div>{/* User text details */}
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{/* Name */}
+              <div className="profile-name">{/* Name */}
                 {user.name ?? "No name set"} {/* Name value */}
               </div> {/* End name */}
-              <div style={{ opacity: 0.8 }}>{user.email}</div>  
+              <div className="profile-meta">{user.email}</div>  
               {user.username ? (
-                <div style={{ opacity: 0.8 }}>@{user.username}</div>
+                <div className="profile-meta">@{user.username}</div>
               ) : null}
             </div>
           </div> 
 
-          <div style={{ marginTop: 16, display: "flex", gap: 12 }}>{/* Action buttons */}
-            <button onClick={logout} style={{ padding: "10px 14px" }} disabled={logoutLoading}>{/* Logout */}
+          <div className="profile-actions">{/* Action buttons */}
+            <button onClick={logout} className="profile-action-button" disabled={logoutLoading}>{/* Logout */}
               {logoutLoading ? "Logging out..." : "Logout"} {/* Button label */}
             </button> {/* End logout button */}
-            <button onClick={loadMe} style={{ padding: "10px 14px" }}>{/* Refresh */}
+            <button onClick={loadMe} className="profile-action-button">{/* Refresh */}
               Refresh profile {/* Button label */}
             </button> {/* End refresh button */}
+            <a href="/taskapp" >
+            <button onClick={loadMe} className="profile-action-button">{/* Refresh */}
+              Tasks {/* Button label */}
+            </button> {/* End refresh button */}
+            </a>
               {/* End refresh button */}
           </div> {/* End action buttons */}
 
