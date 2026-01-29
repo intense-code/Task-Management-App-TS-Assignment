@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Bebas+Neue&family=Space+Grotesk:wght@600&family=Abril+Fatface&display=swap");
+
+.landing-shell {
+  background-color: grey;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px auto 0;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  max-width: 700px;
+  width: min(700px, 100%);
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  box-shadow: 3px 1px 3px 1px black;
+}
+#landing-logo{
+  width:40px;
+  height:20px;
+  
+}
+.landing-nav {
+  margin: -16px -16px 12px;
+}
+
+.profile-card {
+  
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  max-width: 700px;
+}
+h1{
+  box-shadow:2px 2px 2px 2px black;
+  color:rgba(122, 223, 122, 0.726);
+  font-family: "Fraunces","Abril Fatface","Bebas Neue","Space Grotesk",  serif;
+}
+.profile-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-avatar {
+  border-radius: 50%;
+}
+
+.profile-avatar--placeholder {
+  width: 64px;
+  height: 64px;
+  background: #eee;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-meta {
+  opacity: 0.8;
+}
+
+.profile-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.profile-action-button {
+  padding: 10px 14px;
+}
