@@ -2,7 +2,7 @@ import "dotenv/config"; // Load environment variables from .env.
 import express from "express"; // Express web framework.
 import cors from "cors"; // CORS middleware.
 import cookieParser from "cookie-parser"; // Cookie parsing middleware.
-import jwt from "jsonwebtoken"; // JWT signing/verifying.
+import jwt, { type JwtPayload } from "jsonwebtoken"; // JWT signing/verifying.
 import { OAuth2Client } from "google-auth-library"; // Google ID token verifier.
 import pg from "pg"; // Postgres client.
 
@@ -42,12 +42,18 @@ const desiredUserFields = [ // Fields expected by the frontend.
 
 let appUserColumnsCache; // Cached Set of app_users columns.
 
-function signSession(payload) { // Create a signed session token.
+type SessionPayload = { uid: number }; // Session token payload shape.
+
+function signSession(payload: SessionPayload) { // Create a signed session token.
   return jwt.sign(payload, process.env.APP_JWT_SECRET, { expiresIn: "7d" }); // 7 days.
 } // End signSession.
 
-function verifySession(token) { // Validate session token.
-  return jwt.verify(token, process.env.APP_JWT_SECRET); // Throws if invalid.
+function verifySession(token: string): SessionPayload { // Validate session token.
+  const payload = jwt.verify(token, process.env.APP_JWT_SECRET) as string | JwtPayload; // Throws if invalid.
+  if (typeof payload === "string" || typeof payload.uid !== "number") {
+    throw new Error("Invalid session payload");
+  }
+  return payload as SessionPayload;
 } // End verifySession.
 
 async function getAppUserColumns() { // Load app_users column names.
