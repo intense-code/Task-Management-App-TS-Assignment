@@ -1,3 +1,5 @@
+/// <reference types="vitest" />
+
 import fs from "fs"
 import path from "path"
 import { defineConfig, type Plugin } from "vite"
