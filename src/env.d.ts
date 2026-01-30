@@ -8,3 +8,5 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv; // Env variables exposed by Vite.
 } // End ImportMeta.
+
+declare module "*.css";

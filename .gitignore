@@ -7,6 +7,7 @@ yarn-error.log*
 lerna-debug.log*
 server/.env
 /server/.env
+authinguser1.dump
 # Archeticure Specs
 advancedMultiOSBuildV2.md
 ./advancedMultiOSBuildV2.md
