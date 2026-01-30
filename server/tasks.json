@@ -1,0 +1,40 @@
+{
+  "task": {
+    "name": "",
+    "details": "",
+    "finished": false,
+    "remove": false,
+    "enteredDate": "2026-01-29T04:04:35.343Z",
+    "notificationDate": "2026-01-29T04:04:35.343Z",
+    "deadline": "2026-01-29T04:04:35.343Z",
+    "notify_pressed": false,
+    "deadline_pressed": false,
+    "reschedule_after_completed": false
+  },
+  "tasks": [
+    {
+      "name": "Clean up Front Yard",
+      "details": "Clean up all the trees brush and make sure they are double bagged if sand and dirt gets in there.",
+      "finished": false,
+      "remove": false,
+      "enteredDate": "2026-01-29T04:17:41.888Z",
+      "notificationDate": "2026-01-31T01:07:00.000Z",
+      "deadline": "2026-01-31T01:07:00.000Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": false
+    },
+    {
+      "name": "Work on Task Accomplisher",
+      "details": "Make sure to bring the backend to production with supabase on render for free deploy. Then plugin all post request on the front end to the database so we can push for deployment.",
+      "finished": false,
+      "remove": false,
+      "enteredDate": "2026-01-29T04:19:38.250Z",
+      "notificationDate": "2026-01-29T07:00:00.000Z",
+      "deadline": "2026-01-29T07:00:00.000Z",
+      "notify_pressed": true,
+      "deadline_pressed": false,
+      "reschedule_after_completed": false
+    }
+  ]
+}

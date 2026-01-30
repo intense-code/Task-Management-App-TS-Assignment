@@ -15,6 +15,7 @@ const TaskContext = createContext<TaskContextValue | undefined>(undefined)
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(taskReducer, initialState)
   const [initialized, setInitialized] = useState(false)
+  const apiBase = import.meta.env.VITE_API_URL ?? ""
 
   useEffect(() => {
     const reviveTask = (task: Task): Task => ({
@@ -29,7 +30,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const load = async () => {
       try {
-        const res = await fetch("/api/tasks")
+        const res = await fetch(`${apiBase}/api/tasks`)
         if (!res.ok) {
           throw new Error("Failed to load tasks")
         }
@@ -63,7 +64,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       task: serializeTask(state.task),
       tasks: state.tasks.map(serializeTask),
     }
-    fetch("/api/tasks", {
+    fetch(`${apiBase}/api/tasks`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

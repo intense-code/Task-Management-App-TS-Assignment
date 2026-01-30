@@ -5,6 +5,9 @@ import cookieParser from "cookie-parser"; // Cookie parsing middleware.
 import jwt, { type JwtPayload } from "jsonwebtoken"; // JWT signing/verifying.
 import { OAuth2Client } from "google-auth-library"; // Google ID token verifier.
 import pg from "pg"; // Postgres client.
+import fs from "fs"; // File system access for tasks persistence.
+import path from "path"; // File path helpers.
+import { fileURLToPath } from "url"; // ESM path helper.
 
 const { Pool } = pg; // Extract Pool class from pg.
 
@@ -12,9 +15,24 @@ const app = express(); // Create Express app.
 app.use(express.json()); // Parse JSON request bodies.
 app.use(cookieParser()); // Populate req.cookies.
 
+const __filename = fileURLToPath(import.meta.url); // Resolve file path in ESM.
+const __dirname = path.dirname(__filename); // Resolve directory path in ESM.
+const tasksPath = path.resolve(__dirname, "tasks.json"); // Persisted tasks data.
+
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN, // Allow frontend origin from env.
+    origin: (origin, callback) => {
+      const raw = process.env.CLIENT_ORIGIN ?? "";
+      const allowed = raw
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (!origin || allowed.length === 0 || allowed.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Not allowed by CORS"));
+    }, // Allow configured frontend origins.
     credentials: true, // Allow cookies across origins.
   }) // End CORS config.
 ); // Register CORS middleware.
@@ -64,6 +82,21 @@ async function getAppUserColumns() { // Load app_users column names.
   appUserColumnsCache = new Set(rows.map((row) => row.column_name)); // Cache results.
   return appUserColumnsCache; // Return cached set.
 } // End getAppUserColumns.
+
+function readTasksFile() { // Read tasks.json from disk.
+  try {
+    return fs.readFileSync(tasksPath, "utf8");
+  } catch {
+    return JSON.stringify({ task: null, tasks: [] });
+  }
+} // End readTasksFile.
+
+function writeTasksFile(payload: unknown) { // Write tasks.json to disk.
+  const next = `${JSON.stringify(payload, null, 2)}\n`;
+  const tmpPath = `${tasksPath}.tmp`;
+  fs.writeFileSync(tmpPath, next, "utf8");
+  fs.renameSync(tmpPath, tasksPath);
+} // End writeTasksFile.
 
 function normalizeUser(row) { // Normalize DB row to full user shape.
   if (!row) return null; // Return null when no row.
@@ -329,6 +362,25 @@ app.post("/auth/logout", (req, res) => { // Logout endpoint.
   res.clearCookie("session"); // Clear session cookie.
   res.json({ ok: true }); // Return ok response.
 }); // End /auth/logout.
+
+app.get("/api/tasks", (req, res) => { // Tasks read endpoint.
+  try {
+    const contents = readTasksFile();
+    res.setHeader("Content-Type", "application/json");
+    res.status(200).send(contents);
+  } catch {
+    res.status(500).json({ error: "Failed to read tasks.json" });
+  }
+}); // End /api/tasks GET.
+
+app.put("/api/tasks", (req, res) => { // Tasks write endpoint.
+  try {
+    writeTasksFile(req.body);
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ error: "Invalid JSON payload" });
+  }
+}); // End /api/tasks PUT.
 
 app.listen(process.env.PORT || 3001, () => { // Start HTTP server.
   console.log(`Auth API running on http://localhost:${process.env.PORT || 3001}`); // Log URL.

@@ -42,7 +42,7 @@ export default function LandingPage() { // Main app component.
             <Nav skin={skin} setSkin={setSkin} />
           </div>
           <div>
-            <img src='../electron/16.jpeg'id="landing-logo" />
+            <img src="/16.jpeg" id="landing-logo" alt="Task Accomplisher logo" />
           </div>
           <h1>Task Accomplisher</h1> {/* Prompt text */}
           <GoogleLoginButton
