@@ -1,5 +1,3 @@
-/// <reference types="vitest" />
-
 import fs from "fs"
 import path from "path"
 import { defineConfig, type Plugin } from "vite"
@@ -8,11 +6,6 @@ import react from "@vitejs/plugin-react"
 // https://vite.dev/config/
 export default defineConfig({
   appType: "spa",
-  test: {
-    environment: "jsdom",
-    setupFiles: "./src/test/setup.ts",
-    globals: true,
-  },
   plugins: [
     react(),
     (() => {
