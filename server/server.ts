@@ -31,6 +31,7 @@ app.use(
         callback(null, true);
         return;
       }
+      console.warn("CORS blocked origin:", origin, "allowed:", allowed);
       callback(new Error("Not allowed by CORS"));
     }, // Allow configured frontend origins.
     credentials: true, // Allow cookies across origins.
