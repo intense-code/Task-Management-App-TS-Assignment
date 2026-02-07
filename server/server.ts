@@ -23,11 +23,34 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const raw = process.env.CLIENT_ORIGIN ?? "";
+      const normalizeOrigin = (value: string) => value.replace(/\/+$/, "");
       const allowed = raw
         .split(",")
         .map((value) => value.trim())
+        .map((value) => normalizeOrigin(value))
         .filter(Boolean);
-      if (!origin || allowed.length === 0 || allowed.includes(origin)) {
+
+      const requestOrigin = origin ? normalizeOrigin(origin) : "";
+      const requestHost = (() => {
+        try {
+          return new URL(requestOrigin).hostname;
+        } catch {
+          return "";
+        }
+      })();
+
+      const isAllowed =
+        !origin ||
+        allowed.length === 0 ||
+        allowed.some((entry) => {
+          if (entry.startsWith("*.")) {
+            const suffix = entry.slice(2);
+            return Boolean(requestHost) && requestHost.endsWith(`.${suffix}`);
+          }
+          return entry === requestOrigin;
+        });
+
+      if (isAllowed) {
         callback(null, true);
         return;
       }
@@ -310,10 +333,11 @@ app.post("/auth/google", async (req, res) => { // Google login endpoint.
     }
 
     const token = signSession({ uid: user.id }); // Create session token.
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie("session", token, {
       httpOnly: true, // Prevent JS access to cookie.
-      sameSite: "lax", // Reduce CSRF risk.
-      secure: process.env.NODE_ENV === "production", // HTTPS-only in prod.
+      sameSite: isProduction ? "none" : "lax", // Allow cross-site cookies in prod.
+      secure: isProduction, // HTTPS-only in prod.
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms.
     });
 
