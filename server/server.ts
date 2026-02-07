@@ -23,11 +23,14 @@ app.use(
   cors({
     origin: (origin, callback) => {
       const raw = process.env.CLIENT_ORIGIN ?? "";
+      const normalizeOrigin = (value: string) => value.replace(/\/+$/, "");
       const allowed = raw
         .split(",")
         .map((value) => value.trim())
+        .map((value) => normalizeOrigin(value))
         .filter(Boolean);
-      if (!origin || allowed.length === 0 || allowed.includes(origin)) {
+      const requestOrigin = origin ? normalizeOrigin(origin) : "";
+      if (!origin || allowed.length === 0 || allowed.includes(requestOrigin)) {
         callback(null, true);
         return;
       }
