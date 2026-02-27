@@ -1,4 +1,11 @@
-import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
+import {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  globalShortcut,
+  type MenuItemConstructorOptions
+} from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -15,14 +22,57 @@ const appRoot = path.join(__dirname, "..");
 const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
+type ScheduleItem = {
+  id: string;
+  everyMinutes?: number;
+  at?: string;
+  title?: string;
+  message?: string;
+  route?: string;
+};
+
+type TaskItem = {
+  id?: string;
+  name?: string;
+  details?: string;
+  finished?: boolean;
+  remove?: boolean;
+  enteredDate?: string;
+  notificationDate?: string;
+  deadline?: string;
+  notify_pressed?: boolean;
+  deadline_pressed?: boolean;
+  reschedule_after_completed?: boolean;
+};
+
+type SchedulesConfig = {
+  appUrlDev?: string;
+  appUrlProd?: string;
+  items?: ScheduleItem[];
+  tasks?: TaskItem[];
+  task?: TaskItem;
+};
+
+type NotificationPayload = {
+  title?: string;
+  message?: string;
+  route?: string;
+};
+
+declare module "electron" {
+  interface App {
+    isQuiting?: boolean;
+  }
+}
+
 // Global app state.
-let win = null;
-let tray = null;
-let notificationWin = null;
-let lastGoodConfig = { items: [], tasks: [] };
+let win: BrowserWindow | null = null;
+let tray: Tray | null = null;
+let notificationWin: BrowserWindow | null = null;
+let lastGoodConfig: SchedulesConfig = { items: [], tasks: [] };
 let trayAvailable = false;
-const suppressNotificationOpen = new WeakSet();
-const notificationQueue = [];
+const suppressNotificationOpen = new WeakSet<BrowserWindow>();
+const notificationQueue: NotificationPayload[] = [];
 let notificationActive = false;
 
 function toggleWindow() {
@@ -36,23 +86,23 @@ function toggleWindow() {
 }
 
 // Keep track of timers so we can rebuild schedules when JSON changes
-const timers = new Map();
+const timers = new Map<string, NodeJS.Timeout>();
 
 // Read schedules with a safe fallback to the last known-good config.
-function readSchedules() {
+function readSchedules(): SchedulesConfig {
   try {
     const raw = fs.readFileSync(schedulesPath, "utf-8");
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as SchedulesConfig;
     lastGoodConfig = parsed;
     return parsed;
   } catch (err) {
-    const message = err?.message || String(err);
+    const message = err instanceof Error ? err.message : String(err);
     console.warn(`Failed to read schedules: ${message}`);
     return lastGoodConfig;
   }
 }
 
-function writeSchedules(nextConfig) {
+function writeSchedules(nextConfig: SchedulesConfig) {
   const next = `${JSON.stringify(nextConfig, null, 2)}\n`;
   const tmpPath = `${schedulesPath}.tmp`;
   fs.writeFileSync(tmpPath, next, "utf-8");
@@ -60,7 +110,7 @@ function writeSchedules(nextConfig) {
   lastGoodConfig = nextConfig;
 }
 
-function rescheduleTaskInFile(task) {
+function rescheduleTaskInFile(task: TaskItem) {
   try {
     const cfg = readSchedules();
     const tasks = Array.isArray(cfg.tasks) ? cfg.tasks : [];
@@ -82,13 +132,13 @@ function rescheduleTaskInFile(task) {
     });
     writeSchedules({ ...cfg, tasks: updated });
   } catch (err) {
-    const message = err?.message || String(err);
+    const message = err instanceof Error ? err.message : String(err);
     console.warn(`Failed to reschedule task: ${message}`);
   }
 }
 
 // Compute the correct URL for the renderer depending on environment.
-function getAppUrl() {
+function getAppUrl(): string {
   const cfg = readSchedules();
 
   if (!app.isPackaged) return cfg.appUrlDev || "http://localhost:5173/";
@@ -100,7 +150,7 @@ function getAppUrl() {
 }
 
 // Create the BrowserWindow lazily and keep a single instance.
-function ensureWindow() {
+function ensureWindow(): BrowserWindow {
   if (win && !win.isDestroyed()) return win;
 
   win = new BrowserWindow({
@@ -156,7 +206,7 @@ function openOrFocus(route = "/") {
 }
 
 // Create a small always-on-top notification window.
-function showNotificationWindow({ title, message, route }) {
+function showNotificationWindow({ title, message, route }: NotificationPayload) {
   notificationQueue.push({ title, message, route });
   if (notificationActive) return;
   showNextNotification();
@@ -191,7 +241,7 @@ function showNextNotification() {
   const safeTitle = String(title || "Reminder").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const safeMessage = String(message || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const soundUrl = pathToFileURL(
-    path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav")
+    path.join(appRoot, "WavNotify", "mixkit-elevator-tone-2863.wav")
   ).toString();
   const html = `
     <html>
@@ -259,8 +309,8 @@ function showNextNotification() {
 }
 
 // Deliver a desktop notification (custom window that stays until click).
-function notify({ title, message, route }) {
-  const soundPath = path.join(__dirname, "WavNotify", "mixkit-elevator-tone-2863.wav");
+function notify({ title, message, route }: NotificationPayload) {
+  const soundPath = path.join(appRoot, "WavNotify", "mixkit-elevator-tone-2863.wav");
   if (process.platform === "linux") {
     if (fs.existsSync("/usr/bin/paplay")) {
       execFile("/usr/bin/paplay", [soundPath], () => {});
@@ -389,7 +439,7 @@ function buildSchedules() {
 function createTray() {
   // If you don’t set an icon, tray may be invisible on some setups.
   // Add one later: new Tray(path.join(__dirname, "tray.png"))
-  const trayIconPath = path.join(__dirname, "tray.png");
+  const trayIconPath = path.join(appRoot, "tray.png");
   if (!fs.existsSync(trayIconPath)) {
     console.warn(`Tray icon not found at ${trayIconPath}; skipping tray.`);
     return;
@@ -412,7 +462,7 @@ function createTray() {
         app.quit();
       }
     }
-  ]);
+  ] as MenuItemConstructorOptions[]);
 
   tray.setToolTip("Scheduler");
   tray.setContextMenu(menu);
@@ -421,7 +471,7 @@ function createTray() {
 
 // App lifecycle: bootstrap window, tray, and schedulers.
 app.whenReady().then(() => {
-  ensureWindow();
+  const mainWindow = ensureWindow();
   createTray();
   buildSchedules();
 
@@ -431,11 +481,11 @@ app.whenReady().then(() => {
   });
 
   if (!trayAvailable) {
-    win.show();
+    mainWindow.show();
   }
 
   // Auto-reload schedules when JSON changes
-  let reloadTimer = null;
+  let reloadTimer: NodeJS.Timeout | null = null;
   const scheduleReload = () => {
     if (reloadTimer) clearTimeout(reloadTimer);
     reloadTimer = setTimeout(() => {
@@ -444,7 +494,8 @@ app.whenReady().then(() => {
         // Comment out this line if you don't want a toast on every save.
         // notify({ title: "Schedules updated", message: "Reloaded tasks.json", route: "/" });
       } catch (e) {
-        notify({ title: "Schedule error", message: String(e?.message || e), route: "/" });
+        const message = e instanceof Error ? e.message : String(e);
+        notify({ title: "Schedule error", message, route: "/" });
       }
     }, 300);
   };

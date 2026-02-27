@@ -29,28 +29,8 @@ app.use(
         .map((value) => value.trim())
         .map((value) => normalizeOrigin(value))
         .filter(Boolean);
-
       const requestOrigin = origin ? normalizeOrigin(origin) : "";
-      const requestHost = (() => {
-        try {
-          return new URL(requestOrigin).hostname;
-        } catch {
-          return "";
-        }
-      })();
-
-      const isAllowed =
-        !origin ||
-        allowed.length === 0 ||
-        allowed.some((entry) => {
-          if (entry.startsWith("*.")) {
-            const suffix = entry.slice(2);
-            return Boolean(requestHost) && requestHost.endsWith(`.${suffix}`);
-          }
-          return entry === requestOrigin;
-        });
-
-      if (isAllowed) {
+      if (!origin || allowed.length === 0 || allowed.includes(requestOrigin)) {
         callback(null, true);
         return;
       }
