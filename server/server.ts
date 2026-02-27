@@ -313,10 +313,11 @@ app.post("/auth/google", async (req, res) => { // Google login endpoint.
     }
 
     const token = signSession({ uid: user.id }); // Create session token.
+    const isProduction = process.env.NODE_ENV === "production";
     res.cookie("session", token, {
       httpOnly: true, // Prevent JS access to cookie.
-      sameSite: "lax", // Reduce CSRF risk.
-      secure: process.env.NODE_ENV === "production", // HTTPS-only in prod.
+      sameSite: isProduction ? "none" : "lax", // Allow cross-site cookies in prod.
+      secure: isProduction, // HTTPS-only in prod.
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms.
     });
 
