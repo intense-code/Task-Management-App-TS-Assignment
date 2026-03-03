@@ -3,6 +3,7 @@ import type { Dispatch, ReactNode } from "react"
 import type Task from "../model/Tasks.model"
 import { initialState, taskReducer } from "../reducer/TasksReducer"
 import type { TaskAction, TaskState } from "../reducer/TasksReducer"
+import { getApiBaseUrl } from "../lib/api"
 
 type TaskContextValue = {
   state: TaskState
@@ -15,6 +16,7 @@ const TaskContext = createContext<TaskContextValue | undefined>(undefined)
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(taskReducer, initialState)
   const [initialized, setInitialized] = useState(false)
+  const apiBase = getApiBaseUrl()
 
   useEffect(() => {
     const reviveTask = (task: Task): Task => ({
@@ -29,7 +31,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const load = async () => {
       try {
-        const res = await fetch("/api/tasks")
+        const res = await fetch(`${apiBase}/api/tasks`)
         if (!res.ok) {
           throw new Error("Failed to load tasks")
         }
@@ -63,7 +65,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       task: serializeTask(state.task),
       tasks: state.tasks.map(serializeTask),
     }
-    fetch("/api/tasks", {
+    fetch(`${apiBase}/api/tasks`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

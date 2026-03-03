@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"; // React hooks for lifecycle and refs.
 import type {User} from "../../model/auth" // User shape returned by the API.
+import { getApiBaseUrl } from "../../lib/api";
 
 type Props = {
   onLogin?: (user: User) => void; // Optional callback when login succeeds.
@@ -12,6 +13,7 @@ type AuthGoogleResponse = {
 export default function GoogleLoginButton({ onLogin }: Props) { // Google sign-in button.
   const btnRef = useRef<HTMLDivElement | null>(null); // DOM container for GSI button.
   const [loading, setLoading] = useState(true);
+  const api = getApiBaseUrl();
 
   useEffect(() => { // Initialize Google Identity Services once.
     let canceled = false;
@@ -26,9 +28,9 @@ export default function GoogleLoginButton({ onLogin }: Props) { // Google sign-i
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID, // OAuth client id.
         callback: async (response) => { // Handle credential response.
           console.log("Google credential received", response?.credential?.slice(0, 20)); // Debug.
-          console.log("Posting token to API", import.meta.env.VITE_API_URL); // Debug.
+          console.log("Posting token to API", api); // Debug.
 
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/google`, {
+          const res = await fetch(`${api}/auth/google`, {
             method: "POST", // Use POST for auth.
             headers: { "Content-Type": "application/json" }, // JSON body.
             credentials: "include", // Allow session cookie to be set.
@@ -64,7 +66,7 @@ export default function GoogleLoginButton({ onLogin }: Props) { // Google sign-i
       canceled = true;
       window.clearInterval(interval);
     };
-  }, [onLogin]); // Re-run if callback changes.
+  }, [api, onLogin]); // Re-run if callback changes.
 
   return (
     <div className="gsi-wrap">
