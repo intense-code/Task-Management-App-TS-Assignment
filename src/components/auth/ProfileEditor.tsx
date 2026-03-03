@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"; // React hooks for state and memo.
 import type { User } from "../../model/auth"; // User shape from the API.
+import { getApiBaseUrl } from "../../lib/api";
 
 type Props = {
   user: User; // Current user record.
@@ -21,7 +22,7 @@ type ProfileUpdateBody = {
 type ProfileUpdateResponse = { user: User } | { error: string }; // /profile response.
 
 export default function ProfileEditor({ user, onSave }: Props) { // Profile form component.
-  const api = import.meta.env.VITE_API_URL; // API base URL.
+  const api = getApiBaseUrl(); // Resolve a single API base URL.
 
   const initial = useMemo(
     () => ({

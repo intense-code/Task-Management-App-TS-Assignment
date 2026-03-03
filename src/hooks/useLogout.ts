@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { getApiBaseUrl } from "../lib/api"
 
 type LogoutState = {
   loading: boolean
@@ -10,9 +11,9 @@ export const useLogout = (onLoggedOut?: () => void) => {
     loading: false,
     error: null,
   })
+  const api = getApiBaseUrl()
 
   const logout = useCallback(async () => {
-    const api = import.meta.env.VITE_API_URL
     setState({ loading: true, error: null })
     try {
       await fetch(`${api}/auth/logout`, {
@@ -25,7 +26,7 @@ export const useLogout = (onLoggedOut?: () => void) => {
       return
     }
     setState({ loading: false, error: null })
-  }, [onLoggedOut])
+  }, [api, onLoggedOut])
 
   return { logout, ...state }
 }
