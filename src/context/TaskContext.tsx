@@ -29,11 +29,19 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const load = async () => {
       try {
-        const res = await fetch("/api/tasks")
-        if (!res.ok) {
-          throw new Error("Failed to load tasks")
+        let data: { task?: Task; tasks?: Task[] }
+        if (window.desktop?.getTasks) {
+          data = (await window.desktop.getTasks()) as unknown as {
+            task?: Task
+            tasks?: Task[]
+          }
+        } else {
+          const res = await fetch("/api/tasks")
+          if (!res.ok) {
+            throw new Error("Failed to load tasks")
+          }
+          data = (await res.json()) as TaskState
         }
-        const data = (await res.json()) as TaskState
         const nextState: TaskState = {
           task: data?.task ? reviveTask(data.task) : initialState.task,
           tasks: Array.isArray(data?.tasks) ? data.tasks.map(reviveTask) : [],
@@ -63,13 +71,19 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       task: serializeTask(state.task),
       tasks: state.tasks.map(serializeTask),
     }
-    fetch("/api/tasks", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Ignore persistence errors
-    })
+    if (window.desktop?.saveTasks) {
+      window.desktop.saveTasks(payload).catch(() => {
+        // Ignore persistence errors
+      })
+    } else {
+      fetch("/api/tasks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).catch(() => {
+        // Ignore persistence errors
+      })
+    }
   }, [initialized, state])
 
   useEffect(() => {

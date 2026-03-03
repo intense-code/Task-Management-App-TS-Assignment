@@ -1,0 +1,9 @@
+version: 0.0.0
+files:
+  - url: TaskAccomplisher-0.0.0.AppImage
+    sha512: kSEZCSQ1xIZZG5DEKTKqAy46LewQ8wauoyBdvc8Wh5VE2OoynRdO5lbhyiKy+4DhTseauuN+4SyjTQKn41Wk0w==
+    size: 131921946
+    blockMapSize: 137262
+path: TaskAccomplisher-0.0.0.AppImage
+sha512: kSEZCSQ1xIZZG5DEKTKqAy46LewQ8wauoyBdvc8Wh5VE2OoynRdO5lbhyiKy+4DhTseauuN+4SyjTQKn41Wk0w==
+releaseDate: '2026-01-28T02:35:05.808Z'

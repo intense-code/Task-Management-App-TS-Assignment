@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Notification, Tray, Menu, globalShortcut } from "electron";
+import { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -12,14 +12,29 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const appRoot = path.join(__dirname, "..");
-const schedulesPath = path.join(appRoot, "tasks.json");
+let schedulesPath = null;
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
 // Global app state.
 let win = null;
 let tray = null;
 let notificationWin = null;
-let lastGoodConfig = { items: [], tasks: [] };
+let lastGoodConfig = {
+  task: {
+    name: "",
+    details: "",
+    finished: false,
+    remove: false,
+    enteredDate: new Date().toISOString(),
+    notificationDate: new Date().toISOString(),
+    deadline: new Date().toISOString(),
+    notify_pressed: false,
+    deadline_pressed: false,
+    reschedule_after_completed: false
+  },
+  tasks: [],
+  items: []
+};
 let trayAvailable = false;
 const suppressNotificationOpen = new WeakSet();
 const notificationQueue = [];
@@ -38,8 +53,36 @@ function toggleWindow() {
 // Keep track of timers so we can rebuild schedules when JSON changes
 const timers = new Map();
 
+function getSchedulesPath() {
+  if (schedulesPath) return schedulesPath;
+
+  const defaultPath = path.join(appRoot, "tasks.json");
+
+  if (!app.isPackaged) {
+    schedulesPath = defaultPath;
+    return schedulesPath;
+  }
+
+  const userDir = app.getPath("userData");
+  fs.mkdirSync(userDir, { recursive: true });
+  const userPath = path.join(userDir, "tasks.json");
+
+  if (!fs.existsSync(userPath)) {
+    if (fs.existsSync(defaultPath)) {
+      fs.copyFileSync(defaultPath, userPath);
+    } else {
+      const seed = `${JSON.stringify(lastGoodConfig, null, 2)}\n`;
+      fs.writeFileSync(userPath, seed, "utf-8");
+    }
+  }
+
+  schedulesPath = userPath;
+  return schedulesPath;
+}
+
 // Read schedules with a safe fallback to the last known-good config.
 function readSchedules() {
+  const schedulesPath = getSchedulesPath();
   try {
     const raw = fs.readFileSync(schedulesPath, "utf-8");
     const parsed = JSON.parse(raw);
@@ -53,6 +96,7 @@ function readSchedules() {
 }
 
 function writeSchedules(nextConfig) {
+  const schedulesPath = getSchedulesPath();
   const next = `${JSON.stringify(nextConfig, null, 2)}\n`;
   const tmpPath = `${schedulesPath}.tmp`;
   fs.writeFileSync(tmpPath, next, "utf-8");
@@ -93,10 +137,10 @@ function getAppUrl() {
 
   if (!app.isPackaged) return cfg.appUrlDev || "http://localhost:5173/";
 
-  // When packaged, you’ll load your built React files. For now keep placeholder behavior.
-  // You’ll swap this during packaging (see notes below).
-  const prod = cfg.appUrlProd || "file://__APP__/dist/index.html";
-  return prod.replace("__APP__", path.join(process.resourcesPath, "app.asar"));
+  if (cfg.appUrlProd) return cfg.appUrlProd;
+
+  const indexPath = path.join(appRoot, "dist", "index.html");
+  return pathToFileURL(indexPath).toString();
 }
 
 // Create the BrowserWindow lazily and keep a single instance.
@@ -108,7 +152,7 @@ function ensureWindow() {
     height: 750,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true
     }
   });
@@ -273,6 +317,12 @@ function notify({ title, message, route }) {
   }
   showNotificationWindow({ title, message, route: route || "/" });
 }
+
+ipcMain.handle("tasks:get", () => readSchedules());
+ipcMain.handle("tasks:save", (_event, nextConfig) => {
+  writeSchedules(nextConfig);
+  return { ok: true };
+});
 
 // Track scheduled timers so they can be rebuilt on changes.
 function clearAllTimers() {
@@ -449,7 +499,7 @@ app.whenReady().then(() => {
     }, 300);
   };
 
-  const schedulesDir = path.dirname(schedulesPath);
+  const schedulesDir = path.dirname(getSchedulesPath());
   chokidar
     .watch(schedulesDir, { ignoreInitial: true })
     .on("add", (changedPath) => {
