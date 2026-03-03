@@ -3,6 +3,7 @@ import type { Dispatch, ReactNode } from "react"
 import type Task from "../model/Tasks.model"
 import { initialState, taskReducer } from "../reducer/TasksReducer"
 import type { TaskAction, TaskState } from "../reducer/TasksReducer"
+import { getApiBaseUrl } from "../lib/api"
 
 type TaskContextValue = {
   state: TaskState
@@ -15,7 +16,7 @@ const TaskContext = createContext<TaskContextValue | undefined>(undefined)
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(taskReducer, initialState)
   const [initialized, setInitialized] = useState(false)
-  const apiBase = import.meta.env.VITE_API_URL ?? ""
+  const apiBase = getApiBaseUrl()
 
   useEffect(() => {
     const reviveTask = (task: Task): Task => ({

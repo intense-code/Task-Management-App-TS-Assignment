@@ -6,6 +6,7 @@ import { TaskProvider } from "./context/TaskContext"
 import Nav from "./components/nav/Nav"
 import LandingPage from "./LandingPage"
 import { useSkin } from "./hooks/useSkin"
+import { getApiBaseUrl } from "./lib/api"
 
 type AuthStatus = "loading" | "authed" | "guest"
 
@@ -14,7 +15,7 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     let alive = true
-    const api = import.meta.env.VITE_API_URL
+    const api = getApiBaseUrl()
     const check = async () => {
       try {
         const res = await fetch(`${api}/me`, { credentials: "include" })

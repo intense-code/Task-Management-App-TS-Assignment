@@ -6,6 +6,7 @@ import ProfileEditor from "./components/auth/ProfileEditor"; // Editable profile
 import type { User } from "./model/auth"; // User shape shared with the API.
 import Nav from "./components/nav/Nav";
 import { useSkin } from "./hooks/useSkin";
+import { getApiBaseUrl } from "./lib/api";
 import "./LandingPage.model.css";
 
 type MeResponse = { user: User } | { error: string }; // /me API response union.
@@ -13,7 +14,7 @@ type MeResponse = { user: User } | { error: string }; // /me API response union.
 export default function LandingPage() { // Main app component.
   const [user, setUser] = useState<User | null>(null); // Current session user.
   const [loggingIn, setLoggingIn] = useState(false);
-  const api = import.meta.env.VITE_API_URL; // API base URL from env.
+  const api = getApiBaseUrl(); // Resolve a single API base URL.
   const navigate = useNavigate();
   const { logout, loading: logoutLoading } = useLogout(() => setUser(null));
   const { skin, setSkin } = useSkin();

@@ -387,6 +387,14 @@ app.put("/api/tasks", (req, res) => { // Tasks write endpoint.
   }
 }); // End /api/tasks PUT.
 
-app.listen(process.env.PORT || 3001, () => { // Start HTTP server.
-  console.log(`Auth API running on http://localhost:${process.env.PORT || 3001}`); // Log URL.
+const port = Number(process.env.PORT || 3001); // Resolve listen port once.
+const server = app.listen(port, () => { // Start HTTP server.
+  const address = server.address(); // Read the bound address from Node.
+  const host =
+    typeof address === "object" && address
+      ? address.address === "::"
+        ? "localhost"
+        : address.address
+      : "localhost";
+  console.log(`Auth API running on ${host}:${port}`); // Log bound host and port.
 }); // End app.listen.

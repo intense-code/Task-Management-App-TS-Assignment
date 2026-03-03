@@ -4,12 +4,14 @@ import {
   Tray,
   Menu,
   globalShortcut,
+  shell,
   type MenuItemConstructorOptions
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execFile } from "node:child_process";
+import http from "node:http";
 import chokidar from "chokidar";
 
 // Allow autoplay for notification sounds.
@@ -18,7 +20,9 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 // Module path helpers (ESM).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const appRoot = path.join(__dirname, "..");
+const appRoot = app.isPackaged
+  ? process.resourcesPath
+  : path.resolve(__dirname, "..", "..");
 const schedulesPath = path.join(appRoot, "tasks.json");
 const MAX_DELAY_MS = 2147483647; // ~24.8 days (setTimeout max delay)
 
@@ -59,24 +63,19 @@ type NotificationPayload = {
   route?: string;
 };
 
-declare module "electron" {
-  interface App {
-    isQuiting?: boolean;
-  }
-}
-
 // Global app state.
 let win: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let notificationWin: BrowserWindow | null = null;
 let lastGoodConfig: SchedulesConfig = { items: [], tasks: [] };
 let trayAvailable = false;
+let isQuitting = false;
 const suppressNotificationOpen = new WeakSet<BrowserWindow>();
 const notificationQueue: NotificationPayload[] = [];
 let notificationActive = false;
 
-function toggleWindow() {
-  const w = ensureWindow();
+async function toggleWindow() {
+  const w = await ensureWindow();
   if (w.isVisible()) {
     w.hide();
   } else {
@@ -137,11 +136,41 @@ function rescheduleTaskInFile(task: TaskItem) {
   }
 }
 
+function canReachUrl(target: string) {
+  return new Promise<boolean>((resolve) => {
+    const req = http.get(target, (res) => {
+      res.resume();
+      resolve(res.statusCode !== undefined && res.statusCode < 500);
+    });
+
+    req.setTimeout(1500, () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+  });
+}
+
 // Compute the correct URL for the renderer depending on environment.
-function getAppUrl(): string {
+async function getAppUrl(): Promise<string> {
   const cfg = readSchedules();
 
-  if (!app.isPackaged) return cfg.appUrlDev || "http://localhost:5173/";
+  if (!app.isPackaged) {
+    const candidates = [
+      cfg.appUrlDev,
+      process.env.VITE_DEV_SERVER_URL,
+      "http://localhost:5173/",
+      "http://localhost:5174/",
+    ].filter((value): value is string => Boolean(value));
+
+    for (const candidate of candidates) {
+      if (await canReachUrl(candidate)) {
+        return candidate;
+      }
+    }
+
+    return candidates[0] ?? "http://localhost:5173/";
+  }
 
   // When packaged, you’ll load your built React files. For now keep placeholder behavior.
   // You’ll swap this during packaging (see notes below).
@@ -150,7 +179,7 @@ function getAppUrl(): string {
 }
 
 // Create the BrowserWindow lazily and keep a single instance.
-function ensureWindow(): BrowserWindow {
+async function ensureWindow(): Promise<BrowserWindow> {
   if (win && !win.isDestroyed()) return win;
 
   win = new BrowserWindow({
@@ -158,51 +187,55 @@ function ensureWindow(): BrowserWindow {
     height: 750,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true
     }
   });
 
-  win.loadURL(getAppUrl());
-  win.once("ready-to-show", () => {
+  const appUrl = await getAppUrl();
+  win.loadURL(appUrl);
+  const currentWin = win;
+  currentWin.once("ready-to-show", () => {
     // Show the window on launch so it's accessible even if the tray isn't visible.
-    win.show();
+    currentWin.show();
   });
 
   // Tray-style behavior: close hides instead of quitting
-  win.on("close", (e) => {
-    if (!app.isQuiting) {
+  currentWin.on("close", (e) => {
+    if (!isQuitting) {
       e.preventDefault();
-      win.hide();
+      currentWin.hide();
     }
   });
 
-  win.on("closed", () => {
+  currentWin.on("closed", () => {
     win = null;
   });
 
-  return win;
+  return currentWin;
 }
 
 // Bring the app to the front (or reopen) on demand.
 function openOrFocus(route = "/") {
-  const w = ensureWindow();
+  void (async () => {
+    const w = await ensureWindow();
 
-  // If you use React Router with BrowserRouter:
-  // - In dev, opening /route requires your dev server to serve it (Vite does).
-  // - In prod via file:// you’ll likely use HashRouter (recommended) so route becomes #/...
-  //
-  // For simplest cross-env routing: use hash routes and open "#/path".
-  const base = getAppUrl();
-  const url = base.includes("file://")
-    ? `${base}#${route.startsWith("/") ? route : `/${route}`}`
-    : `${base}#${route.startsWith("/") ? route : `/${route}`}`;
+    // If you use React Router with BrowserRouter:
+    // - In dev, opening /route requires your dev server to serve it (Vite does).
+    // - In prod via file:// you’ll likely use HashRouter (recommended) so route becomes #/...
+    //
+    // For simplest cross-env routing: use hash routes and open "#/path".
+    const base = await getAppUrl();
+    const url = base.includes("file://")
+      ? `${base}#${route.startsWith("/") ? route : `/${route}`}`
+      : `${base}#${route.startsWith("/") ? route : `/${route}`}`;
 
-  w.loadURL(url);
+    w.loadURL(url);
 
-  if (w.isMinimized()) w.restore();
-  w.show();
-  w.focus();
+    if (w.isMinimized()) w.restore();
+    w.show();
+    w.focus();
+  })();
 }
 
 // Create a small always-on-top notification window.
@@ -318,8 +351,8 @@ function notify({ title, message, route }: NotificationPayload) {
       execFile("/usr/bin/aplay", [soundPath], () => {});
     }
   }
-  if (typeof app.beep === "function") {
-    app.beep();
+  if (typeof shell.beep === "function") {
+    shell.beep();
   }
   showNotificationWindow({ title, message, route: route || "/" });
 }
@@ -345,8 +378,9 @@ function buildSchedules() {
     if (!item?.id) continue;
 
     // everyMinutes repeating
-    if (Number.isFinite(item.everyMinutes) && item.everyMinutes > 0) {
-      const ms = Math.floor(item.everyMinutes * 60 * 1000);
+    const everyMinutes = item.everyMinutes;
+    if (typeof everyMinutes === "number" && Number.isFinite(everyMinutes) && everyMinutes > 0) {
+      const ms = Math.floor(everyMinutes * 60 * 1000);
 
       // fire first after ms (change to immediate if you want)
       const tick = () => {
@@ -458,7 +492,7 @@ function createTray() {
     {
       label: "Quit",
       click: () => {
-        app.isQuiting = true;
+        isQuitting = true;
         app.quit();
       }
     }
@@ -471,48 +505,50 @@ function createTray() {
 
 // App lifecycle: bootstrap window, tray, and schedulers.
 app.whenReady().then(() => {
-  const mainWindow = ensureWindow();
-  createTray();
-  buildSchedules();
+  void (async () => {
+    const mainWindow = await ensureWindow();
+    createTray();
+    buildSchedules();
 
-  // Fallback: global shortcut to toggle window when tray is unavailable.
-  globalShortcut.register("CommandOrControl+Shift+Y", () => {
-    toggleWindow();
-  });
-
-  if (!trayAvailable) {
-    mainWindow.show();
-  }
-
-  // Auto-reload schedules when JSON changes
-  let reloadTimer: NodeJS.Timeout | null = null;
-  const scheduleReload = () => {
-    if (reloadTimer) clearTimeout(reloadTimer);
-    reloadTimer = setTimeout(() => {
-      try {
-        buildSchedules();
-        // Comment out this line if you don't want a toast on every save.
-        // notify({ title: "Schedules updated", message: "Reloaded tasks.json", route: "/" });
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        notify({ title: "Schedule error", message, route: "/" });
-      }
-    }, 300);
-  };
-
-  const schedulesDir = path.dirname(schedulesPath);
-  chokidar
-    .watch(schedulesDir, { ignoreInitial: true })
-    .on("add", (changedPath) => {
-      if (path.basename(changedPath) === path.basename(schedulesPath)) {
-        scheduleReload();
-      }
-    })
-    .on("change", (changedPath) => {
-      if (path.basename(changedPath) === path.basename(schedulesPath)) {
-        scheduleReload();
-      }
+    // Fallback: global shortcut to toggle window when tray is unavailable.
+    globalShortcut.register("CommandOrControl+Shift+Y", () => {
+      void toggleWindow();
     });
+
+    if (!trayAvailable) {
+      mainWindow.show();
+    }
+
+    // Auto-reload schedules when JSON changes
+    let reloadTimer: NodeJS.Timeout | null = null;
+    const scheduleReload = () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        try {
+          buildSchedules();
+          // Comment out this line if you don't want a toast on every save.
+          // notify({ title: "Schedules updated", message: "Reloaded tasks.json", route: "/" });
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          notify({ title: "Schedule error", message, route: "/" });
+        }
+      }, 300);
+    };
+
+    const schedulesDir = path.dirname(schedulesPath);
+    chokidar
+      .watch(schedulesDir, { ignoreInitial: true })
+      .on("add", (changedPath) => {
+        if (path.basename(changedPath) === path.basename(schedulesPath)) {
+          scheduleReload();
+        }
+      })
+      .on("change", (changedPath) => {
+        if (path.basename(changedPath) === path.basename(schedulesPath)) {
+          scheduleReload();
+        }
+      });
+  })();
 });
 
 // Keep running as tray app
