@@ -12,7 +12,10 @@ simpleElectronBuildV1.md
 ./simpleElectronBuildV1.md
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
+release
+/release
+dist
+/dist
 # Runtime data
 pids
 *.pid
